@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>중국어 복습</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF7EE;
+    --paper-2:#F3ECDD;
+    --ink:#20242A;
+    --ink-soft:#5A5F66;
+    --seal:#B33B3B;
+    --seal-dark:#8F2E2E;
+    --jade:#3E7C59;
+    --gold:#C08A2E;
+    --line:#E4DCC8;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans KR', -apple-system, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .hanzi{font-family:'Noto Serif SC', serif;}
+  #app{max-width:520px;margin:0 auto;min-height:100vh;background:var(--paper);position:relative;padding-bottom:84px;}
+
+  header.top{
+    padding:22px 20px 16px;
+    border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:12px;
+  }
+  .seal-mark{
+    width:44px;height:44px;border-radius:50%;background:var(--paper-2);
+    font-size:26px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    border:1.5px solid var(--line);
+  }
+  header.top h1{font-size:19px;margin:0;line-height:1.2;}
+  header.top p{margin:2px 0 0;font-size:12px;color:var(--ink-soft);}
+
+  nav.tabs{
+    position:fixed;bottom:0;left:0;right:0;
+    max-width:520px;margin:0 auto;
+    background:#fff;border-top:1px solid var(--line);
+    display:flex;z-index:20;
+  }
+  nav.tabs button{
+    flex:1;border:none;background:none;padding:12px 4px 10px;
+    font-family:inherit;font-size:11px;color:var(--ink-soft);cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+  }
+  nav.tabs button .ic{font-size:18px;}
+  nav.tabs button.active{color:var(--seal);font-weight:700;}
+
+  section.view{display:none;padding:18px 20px 20px;}
+  section.view.active{display:block;}
+
+  .card{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;margin-bottom:14px;
+  }
+  .card h3{margin:0 0 4px;font-size:15px;}
+  .sub{font-size:12.5px;color:var(--ink-soft);}
+  .card .sub{margin-bottom:10px;}
+  .row-between{display:flex;justify-content:space-between;align-items:center;}
+  .badge{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:26px;height:20px;padding:0 6px;border-radius:6px;
+    background:var(--paper-2);color:var(--gold);font-size:12px;font-weight:700;
+  }
+  .badge.due{background:#FCE9E9;color:var(--seal);}
+
+  button.primary{
+    background:var(--seal);color:#fff;border:none;border-radius:10px;
+    padding:11px 16px;font-family:inherit;font-size:14px;font-weight:700;
+    cursor:pointer;box-shadow:0 2px 0 var(--seal-dark);
+  }
+  button.primary:disabled{opacity:.4;box-shadow:none;}
+  button.ghost{
+    background:none;border:1px solid var(--line);border-radius:10px;
+    padding:10px 14px;font-family:inherit;font-size:13px;color:var(--ink);cursor:pointer;
+  }
+  button.small{padding:6px 10px;font-size:12px;border-radius:8px;}
+  .stack{display:flex;flex-direction:column;gap:8px;}
+  .hstack{display:flex;gap:8px;}
+
+  h2.section-title{font-size:14px;color:var(--ink-soft);margin:22px 0 10px;letter-spacing:.02em;}
+  h2.section-title:first-child{margin-top:0;}
+
+  select, input[type=text], input[type=number], textarea{
+    font-family:inherit;font-size:14px;border:1px solid var(--line);
+    border-radius:8px;padding:9px 10px;width:100%;background:#fff;color:var(--ink);
+  }
+  textarea{resize:vertical;min-height:120px;font-family:ui-monospace,monospace;font-size:13px;}
+  label.field-label{font-size:12px;color:var(--ink-soft);display:block;margin-bottom:4px;}
+
+  table.list{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.list th{text-align:left;font-size:11px;color:var(--ink-soft);font-weight:600;padding:6px 6px;border-bottom:1px solid var(--line);}
+  table.list td{padding:8px 6px;border-bottom:1px solid #F0EBDD;}
+  table.list td.han{font-family:'Noto Serif SC',serif;font-size:17px;}
+
+  .empty{
+    text-align:center;padding:36px 16px;color:var(--ink-soft);font-size:13.5px;
+    border:1px dashed var(--line);border-radius:var(--radius);
+  }
+
+  /* review overlay */
+  #reviewOverlay{
+    position:fixed;inset:0;background:var(--paper);z-index:50;
+    display:none;flex-direction:column;
+  }
+  #reviewOverlay.active{display:flex;}
+  .review-head{
+    padding:16px 18px 10px;display:flex;justify-content:space-between;align-items:center;
+    border-bottom:1px solid var(--line);
+  }
+  .review-progress{font-size:12px;color:var(--ink-soft);}
+  .review-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;align-items:center;gap:18px;}
+  .big-hanzi{font-family:'Noto Serif SC',serif;font-size:64px;font-weight:700;text-align:center;line-height:1.2;}
+  .writing-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+  .writing-box{display:flex;flex-direction:column;align-items:center;gap:6px;}
+  canvas.wcanvas{
+    background:#fff;border:1px solid var(--line);border-radius:10px;touch-action:none;
+  }
+  .answer-panel{
+    width:100%;max-width:360px;background:#fff;border:1px solid var(--line);
+    border-radius:var(--radius);padding:16px;text-align:center;
+  }
+  .answer-panel .py{font-size:20px;color:var(--jade);font-weight:700;margin-bottom:4px;}
+  .answer-panel .mean{font-size:14px;color:var(--ink);}
+  .answer-panel .han-big{font-family:'Noto Serif SC',serif;font-size:30px;margin-bottom:6px;}
+  .rate-row{display:flex;gap:8px;width:100%;max-width:360px;}
+  .rate-row button{flex:1;padding:12px 4px;border-radius:10px;border:none;font-family:inherit;font-weight:700;font-size:13px;color:#fff;cursor:pointer;}
+  .rate-again{background:#A24848;}
+  .rate-good{background:var(--jade);}
+  .rate-easy{background:var(--gold);}
+  .star-btn{
+    flex:0 0 auto;width:48px;border:1.5px solid var(--gold);background:#fff;
+    border-radius:10px;font-size:22px;color:var(--gold);cursor:pointer;margin-left:8px;
+  }
+  .review-foot{padding:14px 20px 20px;}
+
+  .pinyin-wrap{width:100%;max-width:360px;}
+  .pinyin-input{
+    text-align:center;font-size:17px;font-weight:600;color:var(--jade);
+    border:1.5px solid var(--line);margin-bottom:8px;
+  }
+  .pinyin-input:disabled{background:#F6F3EA;color:var(--ink-soft);}
+  .tone-toolbar{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;}
+  .tone-btn{
+    border:1px solid var(--line);background:#fff;border-radius:6px;
+    padding:5px 8px;font-size:13px;font-family:inherit;color:var(--ink);cursor:pointer;
+  }
+  .tone-btn:active{background:var(--paper-2);}
+
+  /* modal */
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(32,36,42,.5);z-index:60;
+    display:none;align-items:flex-end;justify-content:center;
+  }
+  .modal-bg.active{display:flex;}
+  .modal{
+    background:var(--paper);width:100%;max-width:520px;border-radius:18px 18px 0 0;
+    padding:20px 20px 26px;max-height:88vh;overflow-y:auto;
+  }
+  .modal h3{margin-top:0;}
+  .modal .hint{font-size:12px;color:var(--ink-soft);line-height:1.6;background:var(--paper-2);padding:10px 12px;border-radius:8px;margin:10px 0;white-space:pre-line;}
+  .toast{
+    position:fixed;bottom:96px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;
+    z-index:80;opacity:0;transition:opacity .25s;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="top">
+    <div class="seal-mark">🐼</div>
+    <div>
+      <h1>중국어 복습</h1>
+      <p>나만의 중국어 단어장</p>
+    </div>
+  </header>
+
+  <!-- 홈 -->
+  <section class="view active" id="view-home"></section>
+
+  <!-- HSK -->
+  <section class="view" id="view-hsk"></section>
+
+  <!-- 교재 단어 -->
+  <section class="view" id="view-vocab"></section>
+
+  <!-- 교재 표현 -->
+  <section class="view" id="view-expr"></section>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="home"><span class="ic">🏠</span>홈</button>
+    <button class="tab-btn" data-tab="hsk"><span class="ic">字</span>HSK 단어장</button>
+    <button class="tab-btn" data-tab="vocab"><span class="ic">詞</span>교재 단어</button>
+    <button class="tab-btn" data-tab="expr"><span class="ic">句</span>교재 표현</button>
+  </nav>
+</div>
+
+<div id="reviewOverlay">
+  <div class="review-head">
+    <button class="ghost small" onclick="closeReview()">닫기</button>
+    <span class="review-progress" id="reviewProgress"></span>
+  </div>
+  <div class="review-body" id="reviewBody"></div>
+  <div class="review-foot" id="reviewFoot"></div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- storage helpers (브라우저 localStorage 사용 — 로그인 불필요) ---------------- */
+async function sGet(key){
+  try{ const raw = localStorage.getItem(key); return raw===null ? null : JSON.parse(raw); }
+  catch(e){ return null; }
+}
+async function sSet(key,val){
+  try{ localStorage.setItem(key, JSON.stringify(val)); return true; }
+  catch(e){ console.error('storage set failed', e); return false; }
+}
+
+/* ---------------- date helpers ---------------- */
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function addDays(base, n){
+  const d = new Date(base+'T00:00:00');
+  d.setDate(d.getDate()+n);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function uid(prefix){
+  return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+}
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toast._h);
+  toast._h=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+/* ---------------- seed data (HSK1, Claude가 PDF에서 직접 확인하여 정리) ---------------- */
+const HSK1_RAW = `1\t我\twǒ\tI; me\t나/저
+2\t我们\twǒ men\twe; us\t우리
+3\t你\tnǐ\tyou\t너/당신
+4\t您\tnín\tyou (polite)\t당신(존칭)
+5\t他\ttā\the; him\t그(남)
+6\t她\ttā\tshe; her\t그녀
+7\t它\ttā\tit\t그것(동물, 사물)
+8\t这\tzhè\tthis\t이것
+9\t那\tnà\tthat\t저것
+10\t这些\tzhè xiē\tthese\t이것들
+11\t那些\tnà xiē\tthose\t저것들
+12\t哪\tnǎ\twhich\t어느
+13\t这儿\tzhèr\there\t여기
+14\t那儿\tnàr\tthere\t거기/저기
+15\t哪儿\tnǎr\twhere\t어디
+16\t谁\tshéi\twho\t누구
+17\t什么\tshén me\twhat\t무엇
+18\t多\tduō\thow\t얼마나+형: 얼마나 ~한가
+19\t多少\tduō shǎo\thow many; how much\t얼마나/몇
+20\t几\tjǐ\thow many (small number)\t몇(주로 10 이하)
+21\t怎么\tzěn me\thow; why\t1. 어떻게 2. 왜
+22\t怎么样\tzěn me yàng\thow is it?; how about...?\t~어떠한가?
+23\t怎么了\tzěn me le\twhat's wrong?; what happened?\t1. 왜 이러지? 2. 왜 그래?
+24\t爸爸\tbà ba\tdad; father\t아빠
+25\t妈妈\tmā ma\tmom; mother\t엄마
+26\t儿子\tér zi\tson\t아들
+27\t女儿\tnǚ ér\tdaughter\t딸
+28\t哥哥\tgē ge\tolder brother\t오빠/형
+29\t弟弟\tdì di\tyounger brother\t남동생
+30\t姐姐\tjiě jie\tolder sister\t언니/누나
+31\t妹妹\tmèi mei\tyounger sister\t여동생
+32\t老师\tlǎo shī\tteacher\t선생님
+33\t学生\txué sheng\tstudent\t학생
+34\t同学\ttóng xué\tclassmate\t동급생/반 친구
+35\t朋友\tpéng you\tfriend\t친구
+36\t医生\tyī shēng\tdoctor\t의사
+37\t先生\txiān sheng\tMr.; husband\t미스터/남편
+38\t小姐\txiǎo jiě\tMiss; young lady\t아가씨
+39\t人\trén\tperson; people\t사람
+40\t水\tshuǐ\twater\t물
+41\t茶\tchá\ttea\t차
+42\t水果\tshuǐ guǒ\tfruit\t과일
+43\t苹果\tpíng guǒ\tapple\t사과
+44\t菜\tcài\tvegetable; dish\t1. 음식, 요리 2. 채소
+45\t米饭\tmǐ fàn\t(cooked) rice\t밥
+46\t家\tjiā\thome; family\t집/가정
+47\t学校\txué xiào\tschool\t학교
+48\t饭店\tfàn diàn\trestaurant; hotel\t1. 호텔, 2. 식당
+49\t饭馆儿\tfàn guǎnr\trestaurant\t식당
+50\t商店\tshāng diàn\tshop; store\t가게
+51\t医院\tyī yuàn\thospital\t병원
+52\t中国\tzhōng guó\tChina\t중국
+53\t北京\tběi jīng\tBeijing\t베이징
+54\t上\tshàng\tup; on; above\t1. 위 2. 올라가다
+55\t上面\tshàng miàn\tabove; on top\t위쪽/위에
+56\t下\txià\tdown; below; get off\t1. 아래 2. 내리다
+57\t下面\txià miàn\tbelow; underneath; next\t아래쪽/밑
+58\t里\tlǐ\tinside; in\t안/속
+59\t里面\tlǐ miàn\tinside; interior\t안쪽
+60\t前面\tqián miàn\tin front (of)\t앞
+61\t后面\thòu miàn\tbehind; in back (of)\t뒤
+62\t天气\ttiān qì\tweather\t날씨
+63\t书\tshū\tbook\t책
+64\t桌子\tzhuō zi\ttable; desk\t책상/탁자
+65\t椅子\tyǐ zi\tchair\t의자
+66\t衣服\tyī fu\tclothes\t옷
+67\t杯子\tbēi zi\tcup; glass\t컵/잔
+68\t东西\tdōng xi\tthing; stuff\t물건
+69\t歌\tgē\tsong\t노래
+70\t电视\tdiàn shì\ttelevision\t텔레비전
+71\t电脑\tdiàn nǎo\tcomputer\t컴퓨터
+72\t电影\tdiàn yǐng\tmovie; film\t영화
+73\t电话\tdiàn huà\ttelephone; phone\t전화
+74\t飞机\tfēi jī\tairplane\t비행기
+75\t出租车\tchū zū chē\ttaxi\t택시
+76\t火车\thuǒ chē\ttrain\t기차
+77\t火车站\thuǒ chē zhàn\ttrain station\t기차역
+78\t汉语\thàn yǔ\tChinese (language)\t중국어
+79\t字\tzì\tcharacter; word\t글자
+80\t名字\tmíng zi\tname\t이름
+81\t钱\tqián\tmoney\t돈
+82\t狗\tgǒu\tdog\t개
+83\t猫\tmāo\tcat\t고양이
+84\t昨天\tzuó tiān\tyesterday\t어제
+85\t今天\tjīn tiān\ttoday\t오늘
+86\t明天\tmíng tiān\ttomorrow\t내일
+87\t今年\tjīn nián\tthis year\t올해
+88\t上午\tshàng wǔ\tmorning (before noon)\t오전
+89\t中午\tzhōng wǔ\tnoon\t정오
+90\t下午\txià wǔ\tafternoon\t오후
+91\t点\tdiǎn\to'clock; point; dot\t~시/점
+92\t分钟\tfēn zhōng\tminute\t분
+93\t星期\txīng qī\tweek\t주/요일
+94\t星期天/日\txīng qī tiān / rì\tSunday\t일요일
+95\t现在\txiàn zài\tnow\t지금
+96\t时间\tshí jiān\ttime\t시간
+97\t时候\tshí hou\ttime; moment; when\t때/시간
+98\t年\tnián\tyear\t년
+99\t月\tyuè\tmonth\t월
+100\t日\trì\tday; date\t날/일
+101\t号\thào\tdate (day of month); number\t1. 일 2. 호
+102\t吃\tchī\teat\t먹다
+103\t喝\thē\tdrink\t마시다
+104\t看\tkàn\tlook; watch; read\t보다
+105\t看见\tkàn jiàn\tsee (catch sight of)\t보이다/보다
+106\t看不见\tkàn bu jiàn\tcan't see\t보이지 않는다, 볼 수 없다
+107\t听\ttīng\tlisten\t듣다
+108\t听不见\ttīng bu jiàn\tcan't hear\t들리지 않는다, 들을 수 없다
+109\t写\txiě\twrite\t쓰다
+110\t坐\tzuò\tsit; take (a vehicle)\t1. 앉다 2. (교통수단을) 타다
+111\t买\tmǎi\tbuy\t사다
+112\t卖\tmài\tsell\t팔다
+113\t读\tdú\tread (aloud); study\t읽다
+114\t说\tshuō\tspeak; say\t말하다
+115\t叫\tjiào\tbe called; call; shout\t~라고 부르다/부르다
+116\t住\tzhù\tlive; stay\t살다, 머무르다
+117\t是\tshì\tto be\t~이다
+118\t有\tyǒu\thave; there is/are\t있다/가지다
+119\t没有\tméi yǒu\tnot have; there isn't/aren't\t없다
+120\t请\tqǐng\tplease; invite\t1. please 2. 한턱내다 3. 초청하다 4. 부탁하다
+121\t来\tlái\tcome\t오다
+122\t去\tqù\tgo\t가다
+123\t走\tzǒu\twalk; leave\t1. 가다 2. 걷다 3. 떠나다
+124\t回\thuí\treturn; go back\t돌아가다
+125\t回家\thuí jiā\tgo home; return home\t집에 가다/귀가하다
+126\t开\tkāi\topen\t열다
+127\t做\tzuò\tdo; make\t1. 하다 2.(음식을) 만들다
+128\t学习\txué xí\tstudy; learn\t공부하다
+129\t读书\tdú shū\tstudy; read\t1. 공부하다 2. 책을 읽다
+130\t工作\tgōng zuò\twork; job\t일하다/직업
+131\t打电话\tdǎ diàn huà\tmake a phone call\t전화하다
+132\t开车\tkāi chē\tdrive (a car)\t운전하다
+133\t睡觉\tshuì jiào\tsleep\t자다
+134\t下雨\txià yǔ\train\t비가 오다
+135\t下雪\txià xuě\tsnow\t눈이 오다
+136\t爱\tài\tlove\t사랑하다
+137\t喜欢\txǐ huan\tlike\t좋아하다
+138\t认识\trèn shi\tknow; recognize; get to know\t1. 알다 2. 만나다
+139\t想\txiǎng\twant to; think; miss\t1. ~하고 싶다 2. 생각하다; 그리워하다
+140\t会\thuì\tcan; know how to; will (likely)\t1. (배워서)할 수 있다 2. ~일/할 것이다
+141\t能\tnéng\tcan; be able to\t~할 수 있다
+142\t可以\tkě yǐ\tmay; can; be allowed to\t1.~해도 된다/좋다 2. ~할 수 있다
+143\t要\tyào\twant; need; will; must\t1. ~하려고 하다 2. ~해야 한다
+144\t好\thǎo\tgood; well; OK\t1. 좋다 2. 안녕하다 3. (병이) 낫다
+145\t大\tdà\tbig\t1. (사람) 나이가 많다 2. 크다
+146\t小\txiǎo\tsmall\t1. (사람) 나이가 어리다 2. 작다
+147\t多\tduō\tmany; much; more\t1. 많다 2. 더
+148\t少\tshǎo\tfew; little\t적다
+149\t热\trè\thot\t덥다/뜨겁다
+150\t冷\tlěng\tcold\t춥다/차갑다
+151\t高\tgāo\ttall; high\t높다
+152\t高兴\tgāo xìng\thappy; glad\t기쁘다
+153\t漂亮\tpiào liang\tpretty; beautiful\t예쁘다
+154\t好吃\thǎo chī\ttasty; delicious\t맛있다
+155\t远\tyuǎn\tfar\t멀다
+156\t近\tjìn\tnear\t가깝다
+157\t很\thěn\tvery\t아주/매우
+158\t非常\tfēi cháng\textremely; very\t매우
+159\t太…(了)\ttài … le\ttoo... (emphasis)\t너무 …(했다/다)
+160\t都\tdōu\tall; both\t1. 모두 2. 언제나, 항상 3. 이미, 벌써
+161\t一起\tyì qǐ\ttogether\t함께
+162\t不\tbù\tnot; no\t아니다/안(부정)
+163\t零\tlíng\tzero\t0
+164\t一\tyī\tone\t1
+165\t二\tèr\ttwo\t2
+166\t三\tsān\tthree\t3
+167\t四\tsì\tfour\t4
+168\t五\twǔ\tfive\t5
+169\t六\tliù\tsix\t6
+170\t七\tqī\tseven\t7
+171\t八\tbā\teight\t8
+172\t九\tjiǔ\tnine\t9
+173\t十\tshí\tten\t10
+174\t两\tliǎng\ttwo (for counting)\t둘(양사 앞)
+175\t百\tbǎi\thundred\t백
+176\t千\tqiān\tthousand\t천
+177\t个\tgè(ge)\t(general measure word)\t개, 명
+178\t次\tcì\ttime; occurrence (measure word)\t번(회)
+179\t本\tběn\t(measure word for books)\t권(양사)
+180\t块\tkuài\tyuan (colloq.); piece\t1.조각 2. 위안
+181\t岁\tsuì\tyears old\t살
+182\t件\tjiàn\t(measure word for clothes/things)\t1. 벌(옷) 2.건(일)
+183\t张\tzhāng\t(measure word for flat objects)\t장(얇고 평평한 것을 세는 단위)
+184\t些\txiē\tsome; a few\t조금의, 약간의
+185\t(一)点儿\tyì diǎnr\ta little; a bit\t조금
+186\t在\tzài\tat; in; on; (progressive marker)\t~에 있다/~에서/~하고 있는 중이다
+187\t和\thé\tand; with\t~와/과; 그리고
+188\t的\tde\t's; attributive particle\t~의/…의
+189\t了\tle\t(particle indicating completion/change)\t~했다/변화
+190\t吗\tma\t(question particle)\t~니?/까?
+191\t呢\tne\t(particle for questions/continuation)\t…는/는요?
+192\t喂\twèi\thello (on the phone)\t2성: 여보세요? 4성: 어이, 이봐
+193\t谢谢\txiè xie\tthank you\t감사합니다
+194\t不客气\tbú kè qi\tyou're welcome\t천만에요/별말씀을
+195\t对不起\tduì bu qǐ\tsorry\t죄송합니다
+196\t没关系\tméi guān xi\tit doesn't matter; never mind\t괜찮아요
+197\t再见\tzài jiàn\tgoodbye\t안녕히 가세요/계세요
+198\t听你的\ttīng nǐ de\tup to you; I'll do as you say\t당신 말을 들을게요`;
+
+const HSK2_RAW = `1\t大家\tdà jiā\teveryone; everybody\t여러분
+2\t每\tměi\teach; every\t매, 각
+3\t为什么\twèi shén me\twhy\t왜, 어째서
+4\t丈夫\tzhàng fu\thusband\t남편
+5\t妻子\tqī zi\twife\t아내
+6\t孩子\thái zi\tchild; kid\t아이
+7\t服务员\tfú wù yuán\twaiter/waitress; server\t종업원
+8\t男\tnán\tmale; man\t남
+9\t女\tnǚ\tfemale; woman\t여
+10\t门\tmén\tdoor; gate\t문
+11\t手机\tshǒu jī\tmobile phone\t휴대폰
+12\t手表\tshǒu biǎo\twristwatch\t손목시계
+13\t报纸\tbào zhǐ\tnewspaper\t신문
+14\t咖啡\tkā fēi\tcoffee\t커피
+15\t牛奶\tniú nǎi\tmilk\t우유
+16\t西瓜\txī guā\twatermelon\t수박
+17\t鸡蛋\tjī dàn\tegg\t계란
+18\t面条\tmiàn tiáo\tnoodles\t국수
+19\t羊肉\tyáng ròu\tlamb; mutton\t양고기
+20\t鱼\tyú\tfish\t생선, 물고기
+21\t药\tyào\tmedicine\t약
+22\t路\tlù\troad; way\t길
+23\t票\tpiào\tticket\t표
+24\t房间\tfáng jiān\troom\t방
+25\t公共汽车\tgōng gòng qì chē\tbus\t버스
+26\t公司\tgōng sī\tcompany\t회사
+27\t机场\tjī chǎng\tairport\t공항
+28\t宾馆\tbīn guǎn\thotel\t호텔
+29\t教室\tjiào shì\tclassroom\t교실
+30\t课\tkè\tclass; lesson\t수업
+31\t考试\tkǎo shì\texam; test\t시험(보다)
+32\t铅笔\tqiān bǐ\tpencil\t연필
+33\t身体\tshēn tǐ\tbody\t몸, 신체
+34\t眼睛\tyǎn jing\teyes\t눈
+35\t早上\tzǎo shang\tmorning\t아침
+36\t晚上\twǎn shang\tevening; night\t저녁
+37\t去年\tqù nián\tlast year\t작년
+38\t小时\txiǎo shí\thour\t시간
+39\t生日\tshēng rì\tbirthday\t생일
+40\t外\twài\toutside; external\t바깥, 겉
+41\t右边\tyòu bian\tright side\t오른쪽
+42\t左边\tzuǒ bian\tleft side\t왼쪽
+43\t旁边\tpáng biān\tbeside; next to\t옆
+44\t题\ttí\tquestion; topic; title\t문제, 제목
+45\t问题\twèn tí\tproblem; question\t문제
+46\t颜色\tyán sè\tcolor\t색깔
+47\t意思\tyì si\tmeaning\t뜻, 의미
+48\t事情\tshì qing\tmatter; affair; thing\t일, 사건
+49\t雪\txuě\tsnow\t눈
+50\t姓\txìng\tsurname; last name\t명: 성 / 동: 성이~이다
+51\t洗\txǐ\twash; clean\t씻다, 빨다
+52\t穿\tchuān\twear; put on\t입다, 신다
+53\t等\tděng\twait\t기다리다
+54\t进\tjìn\tenter; come in\t들어가다/들어오다
+55\t出\tchū\tgo out; come out\t나가다/나오다
+56\t到\tdào\tarrive; reach\t도착하다, 이르다
+57\t懂\tdǒng\tunderstand\t알다, 이해하다
+58\t笑\txiào\tlaugh; smile\t웃다
+59\t找\tzhǎo\tlook for; find\t찾다, 구하다
+60\t给\tgěi\tgive; to (prep.)\t동: 주다 / 개: ~에게
+61\t送\tsòng\tsend; give as a gift\t보내다, 선물로 주다
+62\t完\twán\tfinish; complete\t끝나다, 완료
+63\t玩\twán\tplay; have fun\t놀다
+64\t问\twèn\task\t묻다
+65\t让\tràng\tlet; allow; make\t~로 하여금 ~하게 하다
+66\t起床\tqǐ chuáng\tget up\t일어나다, 기상하다
+67\t上班\tshàng bān\tgo to work\t출근하다
+68\t下班\txià bān\tget off work\t퇴근하다
+69\t休息\txiū xi\trest\t쉬다
+70\t说话\tshuō huà\tspeak; talk\t말하다
+71\t告诉\tgào su\ttell; inform\t알려주다
+72\t知道\tzhī dào\tknow\t알다
+73\t帮助\tbāng zhù\thelp\t돕다
+74\t准备\tzhǔn bèi\tprepare\t준비하다
+75\t开始\tkāi shǐ\tstart; begin\t시작하다
+76\t介绍\tjiè shào\tintroduce\t소개하다
+77\t觉得\tjué de\tthink; feel\t~라고 생각하다
+78\t唱歌\tchàng gē\tsing\t노래 부르다
+79\t运动\tyùn dòng\texercise; do sports\t운동하다
+80\t游泳\tyóu yǒng\tswim\t수영하다
+81\t跳舞\ttiào wǔ\tdance\t춤추다
+82\t打篮球\tdǎ lán qiú\tplay basketball\t농구하다
+83\t踢足球\ttī zú qiú\tplay soccer/football\t축구하다
+84\t跑步\tpǎo bù\trun; jog\t달리다
+85\t旅游\tlǚ yóu\ttravel\t여행하다
+86\t生病\tshēng bìng\tget sick; fall ill\t병나다, 아프다
+87\t希望\txī wàng\thope; wish\t희망하다
+88\t可能\tkě néng\tpossible; maybe\t아마도
+89\t忙\tmáng\tbusy\t바쁘다
+90\t累\tlèi\ttired\t피곤하다
+91\t快\tkuài\tfast; quick\t빠르다
+92\t慢\tmàn\tslow\t느리다
+93\t贵\tguì\texpensive\t비싸다
+94\t便宜\tpián yi\tcheap\t저렴하다
+95\t长\tcháng\tlong\t길다
+96\t错\tcuò\twrong; mistaken\t틀리다; 잘못하다
+97\t新\txīn\tnew\t새롭다
+98\t白\tbái\twhite\t희다
+99\t黑\thēi\tblack; dark\t검다, 어둡다
+100\t红\thóng\tred\t빨갛다
+101\t晴\tqíng\tsunny; clear (weather)\t(날씨가) 맑다, 개이다
+102\t阴\tyīn\tcloudy; overcast\t(날씨가) 흐리다
+103\t快乐\tkuài lè\thappy; joyful\t즐겁다
+104\t真\tzhēn\treally; truly\t정말
+105\t最\tzuì\tmost; -est\t가장
+106\t也\tyě\talso; too\t~도, 또한
+107\t再\tzài\tagain; once more\t다시, 또, 더
+108\t还\thái\tstill; yet\t아직, 여전히
+109\t就\tjiù\tthen; right away; just\t곧, 즉시
+110\t已经\tyǐ jīng\talready\t이미, 벌써
+111\t马上\tmǎ shàng\timmediately; at once\t곧, 바로
+112\t正在\tzhèng zài\tbe doing (in progress)\t지금 하고 있다(진행)
+113\t别\tbié\tdon't; mustn't\t~하지 마라
+114\t第一\tdì yī\tfirst\t첫번째, 제1
+115\t一下\tyí xià\ta bit; once (do sth a little)\t좀~하다, 한번 ~하다(V+一下)
+116\t对\tduì\tcorrect; right; toward; about\t(질문에 대한 대답일 때)맞다; ~에 대해
+117\t比\tbǐ\tcompare to; than\t~에 비해, ~보다
+118\t离\tlí\tfrom; away from\t~로부터, ~까지(+시간/장소의 기준점)
+119\t从\tcóng\tfrom\t~로부터
+120\t往\twǎng\ttoward\t~를 향해
+121\t吧\tba\tparticle: (suggestion/command)…; (question)…right?\t~해라; ~하자; (의문문)~이지?
+122\t得\tde\tcomplement marker: verb + 得 + degree\t술어+得+정도보어
+123\t着\tzhe\taspect particle: -ing; while; in a state of\t~하면서, ~한채로
+124\t过\tguo\texperiential particle: have ever; once\t~한 적 있다
+125\t虽然～但是～\tsuī rán… dàn shì …\talthough… but…\t비록 ~이지만
+126\t因为～所以～\tyīn wèi… suǒ yǐ …\tbecause… so…\t~이기 때문에, 그래서~`;
+
+function parseHSKSeed(raw, level){
+  return raw.trim().split('\n').map(line=>{
+    const [no,han,py,en,ko] = line.split('\t');
+    return {id:uid('hsk'), no:Number(no), han, py, en, ko, level};
+  });
+}
+
+/* ---------------- SRS ---------------- */
+async function getSRS(){ return (await sGet('srs')) || {}; }
+async function setSRS(obj){ await sSet('srs', obj); }
+
+function scheduleCard(meta, rating){
+  meta = meta || {ivl:0, ease:2.3, reps:0, lapses:0};
+  if(rating==='again'){
+    meta.ivl = 0;
+    meta.ease = Math.max(1.3, meta.ease-0.2);
+    meta.lapses = (meta.lapses||0)+1;
+    meta.due = todayStr();
+  }else{
+    if(meta.ivl===0){ meta.ivl = 1; }
+    else{
+      const mult = rating==='easy' ? meta.ease*1.3 : meta.ease;
+      meta.ivl = Math.max(1, Math.round(meta.ivl*mult));
+    }
+    if(rating==='easy') meta.ease += 0.15;
+    meta.due = addDays(todayStr(), meta.ivl);
+  }
+  meta.reps = (meta.reps||0)+1;
+  return meta;
+}
+
+function computeDueQueue(deckName, cards, idFilter, srs){
+  const today = todayStr();
+  let pool = cards;
+  if(deckName==='hsk' && idFilter){
+    const allowed = new Set(idFilter);
+    pool = cards.filter(c=>allowed.has(c.id));
+  }
+  const due=[], fresh=[];
+  pool.forEach(c=>{
+    const key = deckName+':'+c.id;
+    const meta = srs[key];
+    if(meta && meta.due<=today) due.push({...c,_key:key,_meta:meta});
+    else if(!meta) fresh.push({...c,_key:key,_meta:null});
+  });
+  due.sort((a,b)=> a._meta.due.localeCompare(b._meta.due));
+  return due.concat(fresh);
+}
+async function getDueQueue(deckName, cards, idFilter){
+  const srs = await getSRS();
+  return computeDueQueue(deckName, cards, idFilter, srs);
+}
+
+function resolveHskScope(cards, rawScope){
+  const allIds = cards.map(c=>c.id);
+  if(!rawScope || !Array.isArray(rawScope)) return allIds;
+  const filtered = rawScope.filter(id=>allIds.includes(id));
+  return filtered.length ? filtered : allIds;
+}
+async function getSavedHskScope(cards){
+  const saved = await sGet('hsk-review-scope');
+  return resolveHskScope(cards, saved);
+}
+
+/* ---------------- data access ---------------- */
+async function loadDeck(key){ return (await sGet(key)) || []; }
+async function saveDeck(key, arr){ await sSet(key, arr); }
+
+async function ensureSeed(){
+  let hsk = await loadDeck('hsk-words');
+  if(hsk.length===0){
+    hsk = parseHSKSeed(HSK1_RAW, '1');
+    await saveDeck('hsk-words', hsk);
+  }
+  if(!hsk.some(c=>String(c.level)==='2')){
+    const hsk2 = parseHSKSeed(HSK2_RAW, '2');
+    hsk = hsk.concat(hsk2);
+    await saveDeck('hsk-words', hsk);
+  }
+}
+
+/* ---------------- tab switching ---------------- */
+const TAB_RENDER = { home: renderHome, hsk: renderHskTab, vocab: renderVocabTab, expr: renderExprTab };
+
+function switchTab(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  TAB_RENDER[name]();
+}
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click', ()=>switchTab(b.dataset.tab));
+});
+
+/* ---------------- HOME ---------------- */
+async function renderHome(){
+  const el = document.getElementById('view-home');
+  el.innerHTML = '<div class="empty">불러오는 중…</div>';
+  const [hsk, vocab, expr, rawScope, srs] = await Promise.all([
+    loadDeck('hsk-words'), loadDeck('textbook-vocab'), loadDeck('textbook-expr'),
+    sGet('hsk-review-scope'), getSRS()
+  ]);
+  const hskScope = resolveHskScope(hsk, rawScope);
+  const hskQ = computeDueQueue('hsk', hsk, hskScope, srs);
+  const vocabQ = computeDueQueue('vocab', vocab, null, srs);
+  const exprQ = computeDueQueue('expr', expr, null, srs);
+  function deckCard(title, sub, total, due, tab, startAction){
+    return `<div class="card">
+      <div class="row-between">
+        <div><h3>${title}</h3><div class="sub">${sub}</div></div>
+        <span class="badge ${due>0?'due':''}">${due>0? due+'개' : '0'}</span>
+      </div>
+      <div class="hstack" style="flex-wrap:wrap;row-gap:8px;">
+        <button class="primary small" ${due===0?'disabled':''} onclick="${startAction}">복습 시작</button>
+        <button class="ghost small" onclick="switchTab('${tab}')">목록 보기</button>
+        <button class="ghost small" onclick="reviewStarred('${tab}')">⭐ 즐겨찾기 복습</button>
+        <button class="ghost small" onclick="openResetConfirm('${tab}')">초기화</button>
+      </div>
+    </div>`;
+  }
+  el.innerHTML = `
+    <h2 class="section-title">오늘의 복습</h2>
+    ${deckCard('HSK 단어장','한자 쓰기 · 뜻 · 병음 &middot; 총 '+hsk.length+'개', hsk.length, hskQ.length, 'hsk', `switchTab('hsk');setTimeout(()=>openReviewScope(),0)`)}
+    ${deckCard('교재 단어','뜻 · 병음 &middot; 총 '+vocab.length+'개', vocab.length, vocabQ.length, 'vocab', `switchTab('vocab');setTimeout(()=>startReview('vocab'),0)`)}
+    ${deckCard('교재 표현','뜻 보고 병음 쓰기 &middot; 총 '+expr.length+'개', expr.length, exprQ.length, 'expr', `switchTab('expr');setTimeout(()=>startReview('expr'),0)`)}
+  `;
+}
+
+/* ---------------- HSK TAB ---------------- */
+let hskLevelFilter = 'all';
+async function renderHskTab(){
+  const el = document.getElementById('view-hsk');
+  const [cards, rawScope, srs] = await Promise.all([loadDeck('hsk-words'), sGet('hsk-review-scope'), getSRS()]);
+  const levels = [...new Set(cards.map(c=>String(c.level)))].sort();
+  const scope = resolveHskScope(cards, rawScope);
+  const dueQ = computeDueQueue('hsk', cards, scope, srs);
+  const scopeLabel = scope.length===cards.length ? '전체 단어' : '선택한 단어 '+scope.length+'개';
+  el.innerHTML = `
+    <div class="row-between" style="margin-bottom:12px;">
+      <select id="hskLevelSel" style="width:auto;">
+        <option value="all">전체 급수</option>
+        ${levels.map(l=>`<option value="${l}" ${hskLevelFilter===l?'selected':''}>${l}급</option>`).join('')}
+      </select>
+      <button class="ghost small" onclick="openImport('hsk')">+ 단어 추가</button>
+    </div>
+    <div class="card">
+      <div class="row-between">
+        <div><h3>복습</h3><div class="sub">${esc(scopeLabel)} · 오늘 복습할 카드 ${dueQ.length}개</div></div>
+        <button class="primary" ${dueQ.length===0?'disabled':''} onclick="openReviewScope()">시작</button>
+      </div>
+      <div class="hstack" style="margin-top:10px;">
+        <button class="ghost small" style="flex:1;" onclick="reviewStarred('hsk')">⭐ 즐겨찾기 복습</button>
+        <button class="ghost small" style="flex:1;" onclick="openResetConfirm('hsk')">초기화</button>
+      </div>
+    </div>
+    <h2 class="section-title">전체 목록 (${cards.length})</h2>
+    <input type="text" id="hskSearch" placeholder="한자/병음/뜻 검색" style="margin-bottom:10px;">
+    <div id="hskListWrap"></div>
+  `;
+  document.getElementById('hskLevelSel').addEventListener('change', e=>{ hskLevelFilter=e.target.value; renderHskTab(); });
+  document.getElementById('hskSearch').addEventListener('input', e=>renderHskList(cards, e.target.value));
+  renderHskList(cards, '');
+}
+function renderHskList(cards, q){
+  const wrap = document.getElementById('hskListWrap');
+  let filtered = hskLevelFilter==='all' ? cards : cards.filter(c=>String(c.level)===hskLevelFilter);
+  if(q) filtered = filtered.filter(c=> (c.han+c.py+c.ko+c.en).toLowerCase().includes(q.toLowerCase()));
+  if(filtered.length===0){ wrap.innerHTML='<div class="empty">해당하는 단어가 없어요.</div>'; return; }
+  wrap.innerHTML = `<table class="list"><thead><tr><th>한자</th><th>병음</th><th>뜻</th><th>급</th></tr></thead><tbody>
+    ${filtered.map(c=>`<tr><td class="han">${esc(c.han)}</td><td>${esc(c.py)}</td><td>${esc(c.ko)}</td><td>${esc(c.level)}급</td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+/* ---------------- VOCAB TAB ---------------- */
+async function renderVocabTab(){
+  const el = document.getElementById('view-vocab');
+  const [cards, srs] = await Promise.all([loadDeck('textbook-vocab'), getSRS()]);
+  const dueQ = computeDueQueue('vocab', cards, null, srs);
+  el.innerHTML = `
+    <div class="row-between" style="margin-bottom:12px;">
+      <div></div>
+      <button class="ghost small" onclick="openImport('vocab')">+ 단어 추가</button>
+    </div>
+    <div class="card">
+      <div class="row-between">
+        <div><h3>복습</h3><div class="sub">오늘 복습할 카드 ${dueQ.length}개</div></div>
+        <button class="primary" ${dueQ.length===0?'disabled':''} onclick="startReview('vocab')">시작</button>
+      </div>
+      <div class="hstack" style="margin-top:10px;">
+        <button class="ghost small" style="flex:1;" onclick="reviewStarred('vocab')">⭐ 즐겨찾기 복습</button>
+        <button class="ghost small" style="flex:1;" onclick="openResetConfirm('vocab')">초기화</button>
+      </div>
+    </div>
+    <h2 class="section-title">전체 목록 (${cards.length})</h2>
+    ${cards.length===0 ? '<div class="empty">아직 추가된 단어가 없어요.<br>우측 상단 "+ 단어 추가"로 교재 단어를 넣어보세요.</div>' : `
+    <input type="text" id="vocabSearch" placeholder="한자/병음/뜻 검색" style="margin-bottom:10px;">
+    <div id="vocabListWrap"></div>`}
+  `;
+  if(cards.length>0){
+    document.getElementById('vocabSearch').addEventListener('input', e=>renderSimpleList('vocabListWrap', cards, e.target.value));
+    renderSimpleList('vocabListWrap', cards, '');
+  }
+}
+function renderSimpleList(wrapId, cards, q){
+  const wrap = document.getElementById(wrapId);
+  let filtered = cards;
+  if(q) filtered = filtered.filter(c=>(c.han+c.py+c.ko).toLowerCase().includes(q.toLowerCase()));
+  if(filtered.length===0){ wrap.innerHTML='<div class="empty">해당하는 항목이 없어요.</div>'; return; }
+  wrap.innerHTML = `<table class="list"><thead><tr><th>한자</th><th>병음</th><th>뜻</th></tr></thead><tbody>
+    ${filtered.map(c=>`<tr><td class="han">${esc(c.han)}</td><td>${esc(c.py)}</td><td>${esc(c.ko)}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+/* ---------------- EXPR TAB ---------------- */
+async function renderExprTab(){
+  const el = document.getElementById('view-expr');
+  const [cards, srs] = await Promise.all([loadDeck('textbook-expr'), getSRS()]);
+  const dueQ = computeDueQueue('expr', cards, null, srs);
+  el.innerHTML = `
+    <div class="row-between" style="margin-bottom:12px;">
+      <div></div>
+      <button class="ghost small" onclick="openImport('expr')">+ 표현 추가</button>
+    </div>
+    <div class="card">
+      <div class="row-between">
+        <div><h3>복습</h3><div class="sub">오늘 복습할 카드 ${dueQ.length}개</div></div>
+        <button class="primary" ${dueQ.length===0?'disabled':''} onclick="startReview('expr')">시작</button>
+      </div>
+      <div class="hstack" style="margin-top:10px;">
+        <button class="ghost small" style="flex:1;" onclick="reviewStarred('expr')">⭐ 즐겨찾기 복습</button>
+        <button class="ghost small" style="flex:1;" onclick="openResetConfirm('expr')">초기화</button>
+      </div>
+    </div>
+    <h2 class="section-title">전체 목록 (${cards.length})</h2>
+    ${cards.length===0 ? '<div class="empty">아직 추가된 표현이 없어요.<br>우측 상단 "+ 표현 추가"로 교재 표현을 넣어보세요.</div>' : `
+    <div id="exprListWrap"></div>`}
+  `;
+  if(cards.length>0){
+    document.getElementById('exprListWrap').innerHTML = cards.map(c=>`
+      <div class="card">
+        <div class="hanzi" style="font-size:18px;">${esc(c.han)}</div>
+        <div class="sub" style="margin:2px 0;">${esc(c.py)}</div>
+        <div style="font-size:13px;">${esc(c.ko)}</div>
+      </div>`).join('');
+  }
+}
+
+/* ---------------- 덱별 초기화 ---------------- */
+const DECK_LABEL = {hsk:'HSK 단어장', vocab:'교재 단어', expr:'교재 표현'};
+function openResetConfirm(deckName){
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <h3>${DECK_LABEL[deckName]} 초기화</h3>
+    <div class="hint" style="background:#FCE9E9;">'${DECK_LABEL[deckName]}'의 학습 기록(복습 일정, 오답/정답 이력)과 ⭐ 즐겨찾기 표시가 사라져요.\n단어 목록 자체는 지워지지 않고, 다른 탭의 기록에는 영향 없어요.\n이 작업은 되돌릴 수 없어요.</div>
+    <div class="hstack" style="margin-top:6px;">
+      <button class="ghost" style="flex:1;" onclick="closeModal()">취소</button>
+      <button class="primary" style="flex:1;background:var(--seal);" onclick="doResetDeck('${deckName}')">초기화</button>
+    </div>
+  `;
+  document.getElementById('modalBg').classList.add('active');
+}
+async function doResetDeck(deckName){
+  const srs = await getSRS();
+  Object.keys(srs).forEach(k=>{ if(k.startsWith(deckName+':')) delete srs[k]; });
+  await setSRS(srs);
+  const starred = await getStarredKeys();
+  await setStarredKeys(starred.filter(k=>!k.startsWith(deckName+':')));
+  closeModal();
+  toast(DECK_LABEL[deckName]+' 기록이 초기화되었어요');
+  TAB_RENDER[document.querySelector('.tab-btn.active').dataset.tab]();
+}
+
+/* ---------------- IMPORT MODAL ---------------- */
+function openImport(deck){
+  const cfg = {
+    hsk:   {title:'HSK 단어 추가', ph:'한자[TAB]병음[TAB]영어뜻[TAB]한국어뜻', needLevel:true,
+            hint:'한 줄에 한 단어씩, 아래 순서로 입력하세요 (탭으로 구분):\n한자    병음    영어뜻    한국어뜻\n\n예)\n爱好\tài hào\thobby\t취미'},
+    vocab: {title:'교재 단어 추가', ph:'한자[TAB]병음[TAB]한국어뜻', needLevel:false,
+            hint:'한 줄에 한 단어씩, 아래 순서로 입력하세요 (탭으로 구분):\n한자    병음    한국어뜻\n\n예)\n爱好\tài hào\t취미'},
+    expr:  {title:'교재 표현 추가', ph:'중국어 문장[TAB]병음[TAB]한국어뜻', needLevel:false,
+            hint:'한 줄에 한 표현씩, 아래 순서로 입력하세요 (탭으로 구분):\n중국어 문장    병음    한국어뜻\n\n예)\n没关系\tméi guān xi\t괜찮아요'}
+  }[deck];
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <h3>${cfg.title}</h3>
+    ${cfg.needLevel? `<label class="field-label">급수</label><input type="number" id="importLevel" min="1" max="9" value="2" style="margin-bottom:10px;">` : ''}
+    <label class="field-label">붙여넣기 (엑셀/메모장에서 복사해도 됩니다 — 탭으로 구분된 표 형식)</label>
+    <textarea id="importText" placeholder="${cfg.ph}"></textarea>
+    <div class="hint">${cfg.hint}\n\n※ PDF나 사진에서 정확하게 표를 옮기고 싶다면, Claude와의 채팅에 원본 파일을 올려서 표로 정리받은 뒤 여기에 붙여넣는 방법이 가장 정확해요.</div>
+    <div class="hstack" style="margin-top:6px;">
+      <button class="ghost" onclick="closeModal()" style="flex:1;">취소</button>
+      <button class="primary" onclick="submitImport('${deck}')" style="flex:1;">저장</button>
+    </div>
+  `;
+  document.getElementById('modalBg').classList.add('active');
+}
+function closeModal(){ document.getElementById('modalBg').classList.remove('active'); }
+
+async function submitImport(deck){
+  const text = document.getElementById('importText').value.trim();
+  if(!text){ toast('내용을 입력해주세요'); return; }
+  const level = deck==='hsk' ? (document.getElementById('importLevel').value || '2') : null;
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const deckKey = deck==='hsk' ? 'hsk-words' : (deck==='vocab' ? 'textbook-vocab' : 'textbook-expr');
+  const existing = await loadDeck(deckKey);
+  let added = 0;
+  lines.forEach(line=>{
+    const parts = line.split('\t').length>1 ? line.split('\t') : line.split(/\s{2,}/);
+    if(deck==='hsk'){
+      if(parts.length<3) return;
+      const [han,py,en,ko] = [parts[0], parts[1], parts[2]||'', parts[3]||parts[2]||''];
+      existing.push({id:uid('hsk'), no: existing.length+1, han:han.trim(), py:py.trim(), en:en.trim(), ko:ko.trim(), level});
+    } else {
+      if(parts.length<2) return;
+      const [han,py,ko] = [parts[0], parts[1], parts[2]||''];
+      existing.push({id:uid(deck), han:han.trim(), py:py.trim(), ko:ko.trim()});
+    }
+    added++;
+  });
+  if(added===0){ toast('인식된 줄이 없어요. 형식을 확인해주세요'); return; }
+  await saveDeck(deckKey, existing);
+  closeModal();
+  toast(added+'개 추가되었어요');
+  if(deck==='hsk') renderHskTab(); else if(deck==='vocab') renderVocabTab(); else renderExprTab();
+}
+
+/* ---------------- REVIEW SCOPE PICKER (HSK 급수 체크박스) ---------------- */
+async function openReviewScope(){
+  const [cards, rawScope] = await Promise.all([loadDeck('hsk-words'), sGet('hsk-review-scope')]);
+  const levels = [...new Set(cards.map(c=>String(c.level)))].sort();
+  const selected = resolveHskScope(cards, rawScope);
+  window._scopeCards = cards;
+  window._scopeSelected = new Set(selected);
+
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <h3>복습 범위 선택</h3>
+    <input type="text" id="scopeSearch" placeholder="한자/병음/뜻 검색" style="margin-bottom:10px;">
+    <label class="hstack" style="align-items:center;margin-bottom:8px;">
+      <input type="checkbox" id="scopeAll">
+      <span><b>전체</b></span>
+    </label>
+    <div class="hstack" id="scopeLevelChips" style="flex-wrap:wrap;margin-bottom:10px;">
+      ${levels.map(l=>`<button type="button" class="ghost small scope-level-chip" data-level="${l}">${l}급 전체</button>`).join('')}
+    </div>
+    <div id="scopeWordList" style="max-height:280px;overflow-y:auto;border-top:1px solid var(--line);padding-top:8px;"></div>
+    <div class="sub" id="scopeCount" style="text-align:center;margin-top:10px;color:var(--ink-soft);"></div>
+    <div class="hstack" style="margin-top:10px;">
+      <button class="primary" style="flex:1;" onclick="confirmScopeAndStart()">복습 시작</button>
+      <button class="ghost" style="flex:1;" onclick="closeModal()">닫기</button>
+    </div>
+  `;
+  document.getElementById('modalBg').classList.add('active');
+
+  renderScopeWordList('');
+
+  document.getElementById('scopeSearch').addEventListener('input', e=>renderScopeWordList(e.target.value));
+  document.getElementById('scopeAll').addEventListener('change', e=>{
+    if(e.target.checked){ window._scopeCards.forEach(c=>window._scopeSelected.add(c.id)); }
+    else{ window._scopeSelected.clear(); }
+    renderScopeWordList(document.getElementById('scopeSearch').value);
+  });
+  document.querySelectorAll('.scope-level-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const lvl = btn.dataset.level;
+      const idsInLevel = window._scopeCards.filter(c=>String(c.level)===lvl).map(c=>c.id);
+      const allSelected = idsInLevel.every(id=>window._scopeSelected.has(id));
+      idsInLevel.forEach(id=> allSelected ? window._scopeSelected.delete(id) : window._scopeSelected.add(id));
+      renderScopeWordList(document.getElementById('scopeSearch').value);
+    });
+  });
+}
+function updateScopeMeta(){
+  const allBox = document.getElementById('scopeAll');
+  if(allBox) allBox.checked = window._scopeSelected.size===window._scopeCards.length;
+  const countEl = document.getElementById('scopeCount');
+  if(countEl) countEl.textContent = window._scopeSelected.size+' / '+window._scopeCards.length+'개 선택됨';
+}
+function renderScopeWordList(query){
+  const wrap = document.getElementById('scopeWordList');
+  let list = window._scopeCards;
+  if(query) list = list.filter(c=>(c.han+c.py+c.ko+c.en).toLowerCase().includes(query.toLowerCase()));
+  wrap.innerHTML = list.length ? list.map(c=>`
+    <label class="hstack" style="align-items:center;padding:5px 0;border-bottom:1px solid #F0EBDD;">
+      <input type="checkbox" class="scope-word" data-id="${c.id}" ${window._scopeSelected.has(c.id)?'checked':''}>
+      <span style="font-size:12px;color:var(--ink-soft);min-width:26px;">${esc(c.no)}.</span>
+      <span class="hanzi" style="font-size:16px;min-width:44px;">${esc(c.han)}</span>
+      <span style="font-size:12.5px;color:var(--ink-soft);">${esc(c.py)} · ${esc(c.ko)}</span>
+    </label>
+  `).join('') : '<div class="empty">해당하는 단어가 없어요.</div>';
+  document.querySelectorAll('.scope-word').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      if(cb.checked) window._scopeSelected.add(cb.dataset.id); else window._scopeSelected.delete(cb.dataset.id);
+      updateScopeMeta();
+    });
+  });
+  updateScopeMeta();
+}
+async function confirmScopeAndStart(){
+  const ids = Array.from(window._scopeSelected);
+  if(ids.length===0){ toast('최소 한 단어는 선택해주세요'); return; }
+  await sSet('hsk-review-scope', ids);
+  closeModal();
+  startReview('hsk', ids);
+}
+
+/* ---------------- REVIEW SESSION ---------------- */
+let review = null;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+async function getStarredKeys(){ return (await sGet('starred')) || []; }
+async function setStarredKeys(arr){ await sSet('starred', arr); }
+
+async function startReview(deckName, ids){
+  const deckKey = deckName==='hsk' ? 'hsk-words' : (deckName==='vocab' ? 'textbook-vocab' : 'textbook-expr');
+  const cards = await loadDeck(deckKey);
+  let idFilter = null;
+  if(deckName==='hsk'){
+    idFilter = ids || await getSavedHskScope(cards);
+  }
+  let queue = await getDueQueue(deckName, cards, idFilter);
+  if(queue.length===0){ toast('오늘 복습할 카드가 없어요'); return; }
+  queue = shuffle(queue);
+  const starred = new Set(await getStarredKeys());
+  review = {deck:deckName, queue, index:0, stage:'question', starred};
+  document.getElementById('reviewOverlay').classList.add('active');
+  renderReviewStep();
+}
+async function reviewStarred(deckName){
+  const deckKey = deckName==='hsk' ? 'hsk-words' : (deckName==='vocab' ? 'textbook-vocab' : 'textbook-expr');
+  const cards = await loadDeck(deckKey);
+  const srs = await getSRS();
+  const starred = new Set(await getStarredKeys());
+  let queue = cards
+    .map(c=>({...c, _key:deckName+':'+c.id, _meta:srs[deckName+':'+c.id]||null}))
+    .filter(c=>starred.has(c._key));
+  if(queue.length===0){ toast('⭐ 표시한 단어가 아직 없어요'); return; }
+  queue = shuffle(queue);
+  review = {deck:deckName, queue, index:0, stage:'question', starred};
+  document.getElementById('reviewOverlay').classList.add('active');
+  renderReviewStep();
+}
+function closeReview(){
+  document.getElementById('reviewOverlay').classList.remove('active');
+  review = null;
+  TAB_RENDER[document.querySelector('.tab-btn.active').dataset.tab]();
+}
+
+function renderReviewStep(){
+  if(!review) return;
+  if(review.index >= review.queue.length){
+    document.getElementById('reviewProgress').textContent='';
+    document.getElementById('reviewBody').innerHTML = `<div class="empty" style="border:none;">
+      <div style="font-size:36px;margin-bottom:8px;">🎉</div>
+      <div style="font-size:15px;color:var(--ink);font-weight:700;">오늘 복습 완료!</div>
+    </div>`;
+    document.getElementById('reviewFoot').innerHTML = `<button class="primary" style="width:100%;" onclick="closeReview()">닫기</button>`;
+    return;
+  }
+  document.getElementById('reviewProgress').textContent = (review.index+1)+' / '+review.queue.length;
+  const card = review.queue[review.index];
+  if(review.stage==='question'){ renderQuestion(card); }
+  else{ renderRevealed(card); }
+}
+
+/* --- 문제 화면 --- */
+function toneToolbar(){
+  const groups = ['āáǎà','ēéěè','īíǐì','ōóǒò','ūúǔù','ǖǘǚǜü'];
+  return `<div class="tone-toolbar">${groups.map(g=>g.split('').map(ch=>`<button type="button" class="tone-btn" onclick="insertTone('${ch}')">${ch}</button>`).join('')).join('')}</div>`;
+}
+function insertTone(ch){
+  const el = document.getElementById('pinyinInput');
+  if(!el) return;
+  const start = el.selectionStart ?? el.value.length;
+  const end = el.selectionEnd ?? el.value.length;
+  el.value = el.value.slice(0,start) + ch + el.value.slice(end);
+  el.focus();
+  el.selectionStart = el.selectionEnd = start + ch.length;
+  el.dispatchEvent(new Event('input'));
+}
+function pinyinInputBlock(){
+  return `
+    <div class="pinyin-wrap">
+      <div class="field-label" style="text-align:center;">병음 입력 (키보드로 로마자 입력)</div>
+      <input type="text" id="pinyinInput" class="pinyin-input" placeholder="예: wo (또는 wǒ)" autocomplete="off" autocapitalize="off" autocorrect="off">
+      <div class="field-label" style="text-align:center;margin-top:6px;">성조가 필요하면 아래 버튼을 눌러 커서 위치에 삽입하세요</div>
+      ${toneToolbar()}
+    </div>
+  `;
+}
+function wirePinyinInput(){
+  const input = document.getElementById('pinyinInput');
+  const btn = document.getElementById('revealBtn');
+  input.addEventListener('input', ()=>{ btn.disabled = input.value.trim().length===0; });
+}
+function renderQuestion(card){
+  const deck = review.deck;
+  if(deck==='hsk'){
+    const chars = card.han.split('');
+    document.getElementById('reviewBody').innerHTML = `
+      <div class="sub" style="text-align:center;font-size:13px;">No.${esc(card.no)}</div>
+      <div class="big-hanzi" style="font-size:26px;font-family:'Noto Sans KR',sans-serif;">${esc(card.ko)}</div>
+      <div class="sub" style="text-align:center;">이 뜻의 한자를 써보세요</div>
+      <div class="writing-row" id="writingRow"></div>
+      ${pinyinInputBlock()}
+    `;
+    document.getElementById('reviewFoot').innerHTML = `
+      <div class="hstack">
+        <button class="primary" id="revealBtn" style="flex:1;" disabled onclick="revealCard()">정답 보기</button>
+        <button class="ghost" style="flex:1;" onclick="skipToReveal()">모르겠어요</button>
+        <button class="ghost" style="flex:1;" onclick="clearAllCanvases()">지우기</button>
+      </div>
+    `;
+    const row = document.getElementById('writingRow');
+    window._canvases = [];
+    chars.forEach(ch=>{
+      const box = document.createElement('div');
+      box.className='writing-box';
+      const size = chars.length>2 ? 100 : 150;
+      box.innerHTML = `<canvas class="wcanvas" width="${size}" height="${size}"></canvas>`;
+      row.appendChild(box);
+      const canvas = box.querySelector('canvas');
+      setupCanvas(canvas, ch);
+      window._canvases.push(canvas);
+    });
+    wirePinyinInput();
+  } else {
+    const isExpr = deck==='expr';
+    document.getElementById('reviewBody').innerHTML = `
+      <div class="big-hanzi" style="${isExpr?'font-size:26px;font-family:Noto Sans KR,sans-serif;':''}">${isExpr ? esc(card.ko) : esc(card.han)}</div>
+      ${isExpr ? '<div class="sub">이 뜻을 병음 문장으로 써보세요</div>' : '<div class="sub">병음을 써보세요</div>'}
+      ${pinyinInputBlock()}
+    `;
+    document.getElementById('reviewFoot').innerHTML = `
+      <div class="hstack">
+        <button class="primary" id="revealBtn" style="flex:1;" disabled onclick="revealCard()">정답 보기</button>
+        <button class="ghost" style="flex:1;" onclick="skipToReveal()">모르겠어요</button>
+      </div>
+    `;
+    wirePinyinInput();
+  }
+}
+
+function setupCanvas(canvas, ch){
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  canvas.dataset.char = ch;
+  let drawing=false, lastX=0, lastY=0;
+  function pos(e){
+    const r = canvas.getBoundingClientRect();
+    const cx = (e.touches? e.touches[0].clientX : e.clientX) - r.left;
+    const cy = (e.touches? e.touches[0].clientY : e.clientY) - r.top;
+    return [cx,cy];
+  }
+  function start(e){ drawing=true; [lastX,lastY]=pos(e); e.preventDefault(); }
+  function move(e){
+    if(!drawing) return;
+    const [x,y]=pos(e);
+    ctx.strokeStyle='#20242A'; ctx.lineWidth=7; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke();
+    [lastX,lastY]=[x,y]; e.preventDefault();
+  }
+  function end(){ drawing=false; }
+  canvas.addEventListener('pointerdown', start);
+  canvas.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', end);
+  canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+}
+function clearAllCanvases(){
+  (window._canvases||[]).forEach(canvas=>{
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  });
+}
+
+/* --- 정답 화면 --- */
+function revealCard(){
+  const el = document.getElementById('pinyinInput');
+  review.typedPinyin = el ? el.value.trim() : '';
+  if(el) el.disabled = true;
+  review.stage = 'revealed';
+  renderRevealed(review.queue[review.index]);
+}
+function skipToReveal(){
+  review.typedPinyin = '';
+  review.skipped = true;
+  revealCard();
+}
+function typedCompareHTML(card){
+  if(!review.typedPinyin) return '';
+  return `<div class="sub" style="margin-top:8px;">내가 쓴 병음: <b style="color:var(--ink);">${esc(review.typedPinyin)}</b></div>`;
+}
+function renderRevealed(card){
+  const deck = review.deck;
+  if(deck==='hsk'){
+    (window._canvases||[]).forEach(canvas=>{
+      const ctx = canvas.getContext('2d');
+      ctx.globalAlpha=0.28;
+      ctx.fillStyle='#B33B3B';
+      ctx.font = Math.round(canvas.width*0.75)+'px "Noto Serif SC", serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(canvas.dataset.char, canvas.width/2, canvas.height/2+4);
+      ctx.globalAlpha=1;
+    });
+    document.getElementById('reviewBody').insertAdjacentHTML('beforeend', `
+      <div class="answer-panel">
+        <div class="han-big hanzi">${esc(card.han)}</div>
+        <div class="py">${esc(card.py)}</div>
+      </div>
+      ${typedCompareHTML(card)}
+    `);
+  } else {
+    const isExpr = deck==='expr';
+    document.getElementById('reviewBody').insertAdjacentHTML('beforeend', `
+      <div class="answer-panel">
+        ${isExpr ? `<div class="han-big hanzi">${esc(card.han)}</div><div class="py">${esc(card.py)}</div>`
+                 : `<div class="py">${esc(card.py)}</div><div class="mean">${esc(card.ko)}${card.en?' · '+esc(card.en):''}</div>`}
+      </div>
+      ${typedCompareHTML(card)}
+    `);
+  }
+  if(review.skipped){
+    document.getElementById('reviewFoot').innerHTML = `
+      <div class="sub" style="text-align:center;margin-bottom:6px;color:var(--seal);">오답으로 기록돼요 — 곧 다시 나와요</div>
+      <button class="primary" style="width:100%;" onclick="rateCard('again')">다음</button>
+    `;
+  } else {
+    const isStarred = review.starred && review.starred.has(card._key);
+    document.getElementById('reviewFoot').innerHTML = `
+      <div class="sub" style="text-align:center;margin-bottom:6px;">직접 쓴 것과 비교해서 맞았는지 표시해주세요</div>
+      <div class="hstack" style="align-items:stretch;">
+        <div class="rate-row" style="flex:1;">
+          <button class="rate-good" onclick="rateCard('good')">정답</button>
+          <button class="rate-again" onclick="rateCard('again')">오답</button>
+        </div>
+        <button class="star-btn" id="starBtn" onclick="toggleStar()">${isStarred?'★':'☆'}</button>
+      </div>
+    `;
+  }
+}
+function toggleStar(){
+  const card = review.queue[review.index];
+  if(!review.starred) review.starred = new Set();
+  if(review.starred.has(card._key)) review.starred.delete(card._key);
+  else review.starred.add(card._key);
+  setStarredKeys(Array.from(review.starred));
+  const btn = document.getElementById('starBtn');
+  if(btn) btn.textContent = review.starred.has(card._key) ? '★' : '☆';
+}
+async function rateCard(rating){
+  const card = review.queue[review.index];
+  const srs = await getSRS();
+  const meta = scheduleCard(srs[card._key], rating);
+  srs[card._key] = meta;
+  await setSRS(srs);
+  if(rating==='again'){
+    review.queue.push(card);
+  }
+  review.index++;
+  review.stage = 'question';
+  review.skipped = false;
+  renderReviewStep();
+}
+
+/* ---------------- init ---------------- */
+(async function init(){
+  await ensureSeed();
+  renderHome();
+})();
+</script>
+</body>
+</html>
