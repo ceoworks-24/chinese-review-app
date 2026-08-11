@@ -157,10 +157,13 @@
     border:1.5px solid var(--line);margin-bottom:8px;
   }
   .pinyin-input:disabled{background:#F6F3EA;color:var(--ink-soft);}
-  .tone-toolbar{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;}
+  .tone-toolbar{display:flex;flex-direction:column;gap:6px;align-items:center;}
+  .tone-row{display:flex;gap:14px;}
+  .tone-group{display:flex;gap:5px;}
   .tone-btn{
+    width:32px;height:32px;padding:0;
     border:1px solid var(--line);background:#fff;border-radius:6px;
-    padding:5px 8px;font-size:13px;font-family:inherit;color:var(--ink);cursor:pointer;
+    font-size:14px;font-family:inherit;color:var(--ink);cursor:pointer;
   }
   .tone-btn:active{background:var(--paper-2);}
 
@@ -857,9 +860,11 @@ function renderStarredListModal(){
   if(cards.length===0){ wrap.innerHTML = '<div class="empty">즐겨찾기한 단어가 없어요.</div>'; return; }
   wrap.innerHTML = cards.map(c=>`
     <div class="hstack" style="align-items:center;padding:6px 0;border-bottom:1px solid #F0EBDD;">
+      ${c.no!=null ? `<span style="font-size:12px;color:var(--ink-soft);min-width:26px;">${esc(c.no)}.</span>` : ''}
       <div style="flex:1;">
         <span class="hanzi" style="font-size:15px;">${esc(c.han)}</span>
         <span style="font-size:12px;color:var(--ink-soft);margin-left:6px;">${esc(c.py)} · ${esc(c.ko)}</span>
+        ${deckName==='hsk' ? `<span style="font-size:11px;color:var(--gold);margin-left:6px;">${esc(c.level)}급</span>` : ''}
       </div>
       <button class="star-btn-sm" onclick="toggleStarredListItem('${c.id}')">★</button>
     </div>
@@ -1123,8 +1128,15 @@ function renderReviewStep(){
 
 /* --- 문제 화면 --- */
 function toneToolbar(){
-  const groups = ['āáǎà','ēéěè','īíǐì','ōóǒò','ūúǔù','ǖǘǚǜü'];
-  return `<div class="tone-toolbar">${groups.map(g=>g.split('').map(ch=>`<button type="button" class="tone-btn" onclick="insertTone('${ch}')">${ch}</button>`).join('')).join('')}</div>`;
+  const groups = ['āáǎà','ēéěè','īíǐì','ōóǒò','ūúǔù','ǖǘǚǜ'];
+  const rows = [[groups[0],groups[1]], [groups[2],groups[3]], [groups[4],groups[5]]];
+  const rowHtml = rows.map(([g1,g2])=>`
+    <div class="tone-row">
+      <div class="tone-group">${g1.split('').map(ch=>`<button type="button" class="tone-btn" onclick="insertTone('${ch}')">${ch}</button>`).join('')}</div>
+      <div class="tone-group">${g2.split('').map(ch=>`<button type="button" class="tone-btn" onclick="insertTone('${ch}')">${ch}</button>`).join('')}</div>
+    </div>
+  `).join('');
+  return `<div class="tone-toolbar">${rowHtml}</div>`;
 }
 function insertTone(ch){
   const el = document.getElementById('pinyinInput');
@@ -1139,10 +1151,9 @@ function insertTone(ch){
 function pinyinInputBlock(){
   return `
     <div class="pinyin-wrap">
-      <div class="field-label" style="text-align:center;">병음 입력 (키보드로 로마자 입력)</div>
       <input type="text" id="pinyinInput" class="pinyin-input" placeholder="예: wo (또는 wǒ)" autocomplete="off" autocapitalize="off" autocorrect="off">
-      <div class="field-label" style="text-align:center;margin-top:6px;">성조가 필요하면 아래 버튼을 눌러 커서 위치에 삽입하세요</div>
       ${toneToolbar()}
+      <div id="answerSlot"></div>
     </div>
   `;
 }
@@ -1158,7 +1169,6 @@ function renderQuestion(card){
     document.getElementById('reviewBody').innerHTML = `
       <div class="sub" style="text-align:center;font-size:13px;">No.${esc(card.no)}</div>
       <div class="big-hanzi" style="font-size:26px;font-family:'Noto Sans KR',sans-serif;">${esc(card.ko)}</div>
-      <div class="sub" style="text-align:center;">이 뜻의 한자를 써보세요</div>
       <div class="writing-row" id="writingRow"></div>
       ${pinyinInputBlock()}
     `;
@@ -1262,22 +1272,22 @@ function renderRevealed(card){
       ctx.fillText(canvas.dataset.char, canvas.width/2, canvas.height/2+4);
       ctx.globalAlpha=1;
     });
-    document.getElementById('reviewBody').insertAdjacentHTML('beforeend', `
+    document.getElementById('answerSlot').innerHTML = `
       <div class="answer-panel">
         <div class="han-big hanzi">${esc(card.han)}</div>
         <div class="py">${esc(card.py)}</div>
       </div>
       ${typedCompareHTML(card)}
-    `);
+    `;
   } else {
     const isExpr = deck==='expr';
-    document.getElementById('reviewBody').insertAdjacentHTML('beforeend', `
+    document.getElementById('answerSlot').innerHTML = `
       <div class="answer-panel">
         ${isExpr ? `<div class="han-big hanzi">${esc(card.han)}</div><div class="py">${esc(card.py)}</div>`
                  : `<div class="py">${esc(card.py)}</div><div class="mean">${esc(card.ko)}${card.en?' · '+esc(card.en):''}</div>`}
       </div>
       ${typedCompareHTML(card)}
-    `);
+    `;
   }
   if(review.skipped){
     document.getElementById('reviewFoot').innerHTML = `
