@@ -689,14 +689,15 @@ document.querySelectorAll('.tab-btn').forEach(b=>{
 async function renderHome(){
   const el = document.getElementById('view-home');
   el.innerHTML = '<div class="empty">불러오는 중…</div>';
-  const [hsk, vocab, expr, rawScope, srs] = await Promise.all([
+  const [hsk, vocab, expr, rawScope, srs, starredArr] = await Promise.all([
     loadDeck('hsk-words'), loadDeck('textbook-vocab'), loadDeck('textbook-expr'),
-    sGet('hsk-review-scope'), getSRS()
+    sGet('hsk-review-scope'), getSRS(), getStarredKeys()
   ]);
   const hskScope = resolveHskScope(hsk, rawScope);
   const hskQ = computeDueQueue('hsk', hsk, hskScope, srs);
   const vocabQ = computeDueQueue('vocab', vocab, null, srs);
   const exprQ = computeDueQueue('expr', expr, null, srs);
+  function starCount(deckName){ return starredArr.filter(k=>k.startsWith(deckName+':')).length; }
   function deckCard(title, sub, total, due, tab, startAction){
     return `<div class="card">
       <div class="row-between">
@@ -706,7 +707,7 @@ async function renderHome(){
       <div class="hstack" style="flex-wrap:wrap;row-gap:8px;">
         <button class="primary small" ${due===0?'disabled':''} onclick="${startAction}">복습 시작</button>
         <button class="ghost small" onclick="switchTab('${tab}')">목록 보기</button>
-        <button class="ghost small" onclick="reviewStarred('${tab}')">⭐ 즐겨찾기 복습</button>
+        <button class="ghost small" onclick="reviewStarred('${tab}')">⭐ 즐겨찾기 복습 (${starCount(tab)})</button>
         <button class="ghost small" onclick="openResetConfirm('${tab}')">초기화</button>
       </div>
     </div>`;
@@ -744,7 +745,7 @@ async function renderHskTab(){
         <button class="primary" ${dueQ.length===0?'disabled':''} onclick="openReviewScope()">시작</button>
       </div>
       <div class="hstack" style="margin-top:10px;">
-        <button class="ghost small" style="flex:1;" onclick="reviewStarred('hsk')">⭐ 즐겨찾기 복습</button>
+        <button class="ghost small" style="flex:1;" onclick="reviewStarred('hsk')">⭐ 즐겨찾기 복습 (${starredArr.filter(k=>k.startsWith('hsk:')).length})</button>
         <button class="ghost small" style="flex:1;" onclick="openResetConfirm('hsk')">초기화</button>
       </div>
     </div>
@@ -782,7 +783,7 @@ async function toggleListStar(id){
 /* ---------------- VOCAB TAB ---------------- */
 async function renderVocabTab(){
   const el = document.getElementById('view-vocab');
-  const [cards, srs] = await Promise.all([loadDeck('textbook-vocab'), getSRS()]);
+  const [cards, srs, starredArr] = await Promise.all([loadDeck('textbook-vocab'), getSRS(), getStarredKeys()]);
   const dueQ = computeDueQueue('vocab', cards, null, srs);
   el.innerHTML = `
     <div class="row-between" style="margin-bottom:12px;">
@@ -795,7 +796,7 @@ async function renderVocabTab(){
         <button class="primary" ${dueQ.length===0?'disabled':''} onclick="startReview('vocab')">시작</button>
       </div>
       <div class="hstack" style="margin-top:10px;">
-        <button class="ghost small" style="flex:1;" onclick="reviewStarred('vocab')">⭐ 즐겨찾기 복습</button>
+        <button class="ghost small" style="flex:1;" onclick="reviewStarred('vocab')">⭐ 즐겨찾기 복습 (${starredArr.filter(k=>k.startsWith('vocab:')).length})</button>
         <button class="ghost small" style="flex:1;" onclick="openResetConfirm('vocab')">초기화</button>
       </div>
     </div>
@@ -822,7 +823,7 @@ function renderSimpleList(wrapId, cards, q){
 /* ---------------- EXPR TAB ---------------- */
 async function renderExprTab(){
   const el = document.getElementById('view-expr');
-  const [cards, srs] = await Promise.all([loadDeck('textbook-expr'), getSRS()]);
+  const [cards, srs, starredArr] = await Promise.all([loadDeck('textbook-expr'), getSRS(), getStarredKeys()]);
   const dueQ = computeDueQueue('expr', cards, null, srs);
   el.innerHTML = `
     <div class="row-between" style="margin-bottom:12px;">
@@ -835,7 +836,7 @@ async function renderExprTab(){
         <button class="primary" ${dueQ.length===0?'disabled':''} onclick="startReview('expr')">시작</button>
       </div>
       <div class="hstack" style="margin-top:10px;">
-        <button class="ghost small" style="flex:1;" onclick="reviewStarred('expr')">⭐ 즐겨찾기 복습</button>
+        <button class="ghost small" style="flex:1;" onclick="reviewStarred('expr')">⭐ 즐겨찾기 복습 (${starredArr.filter(k=>k.startsWith('expr:')).length})</button>
         <button class="ghost small" style="flex:1;" onclick="openResetConfirm('expr')">초기화</button>
       </div>
     </div>
