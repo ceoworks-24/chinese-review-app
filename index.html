@@ -144,6 +144,9 @@
     flex:0 0 auto;width:48px;border:1.5px solid var(--gold);background:#fff;
     border-radius:10px;font-size:22px;color:var(--gold);cursor:pointer;margin-left:8px;
   }
+  .star-btn-sm{
+    border:none;background:none;font-size:18px;color:var(--gold);cursor:pointer;padding:2px 4px;
+  }
   .review-foot{padding:14px 20px 20px;}
 
   .pinyin-wrap{width:100%;max-width:360px;}
@@ -718,11 +721,13 @@ async function renderHome(){
 let hskLevelFilter = 'all';
 async function renderHskTab(){
   const el = document.getElementById('view-hsk');
-  const [cards, rawScope, srs] = await Promise.all([loadDeck('hsk-words'), sGet('hsk-review-scope'), getSRS()]);
+  const [cards, rawScope, srs, starredArr] = await Promise.all([loadDeck('hsk-words'), sGet('hsk-review-scope'), getSRS(), getStarredKeys()]);
   const levels = [...new Set(cards.map(c=>String(c.level)))].sort();
   const scope = resolveHskScope(cards, rawScope);
   const dueQ = computeDueQueue('hsk', cards, scope, srs);
   const scopeLabel = scope.length===cards.length ? '전체 단어' : '선택한 단어 '+scope.length+'개';
+  window._hskCards = cards;
+  window._hskStarred = new Set(starredArr);
   el.innerHTML = `
     <div class="row-between" style="margin-bottom:12px;">
       <select id="hskLevelSel" style="width:auto;">
@@ -754,9 +759,22 @@ function renderHskList(cards, q){
   let filtered = hskLevelFilter==='all' ? cards : cards.filter(c=>String(c.level)===hskLevelFilter);
   if(q) filtered = filtered.filter(c=> (c.han+c.py+c.ko+c.en).toLowerCase().includes(q.toLowerCase()));
   if(filtered.length===0){ wrap.innerHTML='<div class="empty">해당하는 단어가 없어요.</div>'; return; }
-  wrap.innerHTML = `<table class="list"><thead><tr><th>한자</th><th>병음</th><th>뜻</th><th>급</th></tr></thead><tbody>
-    ${filtered.map(c=>`<tr><td class="han">${esc(c.han)}</td><td>${esc(c.py)}</td><td>${esc(c.ko)}</td><td>${esc(c.level)}급</td></tr>`).join('')}
+  wrap.innerHTML = `<table class="list"><thead><tr><th>#</th><th>한자</th><th>병음</th><th>뜻</th><th>급</th><th>★</th></tr></thead><tbody>
+    ${filtered.map(c=>{
+      const starred = window._hskStarred && window._hskStarred.has('hsk:'+c.id);
+      return `<tr><td style="color:var(--ink-soft);font-size:12px;">${esc(c.no)}</td><td class="han">${esc(c.han)}</td><td>${esc(c.py)}</td><td>${esc(c.ko)}</td><td>${esc(c.level)}급</td><td><button class="star-btn-sm" onclick="toggleListStar('${c.id}')">${starred?'★':'☆'}</button></td></tr>`;
+    }).join('')}
   </tbody></table>`;
+}
+async function toggleListStar(id){
+  const key = 'hsk:'+id;
+  const arr = await getStarredKeys();
+  const set = new Set(arr);
+  if(set.has(key)) set.delete(key); else set.add(key);
+  await setStarredKeys(Array.from(set));
+  window._hskStarred = set;
+  const q = document.getElementById('hskSearch') ? document.getElementById('hskSearch').value : '';
+  renderHskList(window._hskCards, q);
 }
 
 /* ---------------- VOCAB TAB ---------------- */
