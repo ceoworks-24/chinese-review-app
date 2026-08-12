@@ -126,10 +126,10 @@
   .review-card-no{font-size:13px;font-weight:700;color:var(--seal);}
   .review-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;align-items:center;gap:18px;}
   .big-hanzi{font-family:'Noto Serif SC',serif;font-size:64px;font-weight:700;text-align:center;line-height:1.2;}
-  .writing-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
-  .writing-box{display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .writing-row{display:flex;gap:12px;justify-content:center;flex-wrap:nowrap;}
+  .writing-box{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;}
   canvas.wcanvas{
-    background:#fff;border:1px solid var(--line);border-radius:10px;touch-action:none;
+    background:#fff;border:1px solid var(--line);border-radius:10px;touch-action:none;box-sizing:border-box;display:block;
   }
   .answer-panel{
     width:100%;max-width:360px;background:#fff;border:1px solid var(--line);
@@ -1181,8 +1181,8 @@ function renderQuestion(card){
         <button class="ghost" style="flex:1;" onclick="skipToReveal()">모르겠어요</button>
       </div>
       <div class="hstack" style="margin-top:8px;">
-        <button class="ghost" style="flex:1;" onclick="undoStroke()">획 지우기</button>
         <button class="ghost" style="flex:1;" onclick="clearAllCanvases()">전체 지우기</button>
+        <button class="ghost" style="flex:1;" onclick="undoStroke()">획 지우기</button>
       </div>
     `;
     const row = document.getElementById('writingRow');
@@ -1307,18 +1307,28 @@ function typedCompareHTML(card){
   if(!review.typedPinyin) return '';
   return `<div class="sub" style="margin-top:8px;">내가 쓴 병음: <b style="color:var(--ink);">${esc(review.typedPinyin)}</b></div>`;
 }
+function drawAnswerOverlay(canvas){
+  const ctx = canvas.getContext('2d');
+  ctx.globalAlpha=0.28;
+  ctx.fillStyle='#B33B3B';
+  ctx.font = Math.round(canvas.width*0.75)+'px "Noto Serif SC", serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(canvas.dataset.char, canvas.width/2, canvas.height/2+4);
+  ctx.globalAlpha=1;
+}
+function clearInkKeepOverlay(){
+  (window._canvases||[]).forEach(canvas=>{
+    canvas._strokes = [];
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    drawAnswerOverlay(canvas);
+  });
+  window._strokeLog = [];
+}
 function renderRevealed(card){
   const deck = review.deck;
   if(deck==='hsk'){
-    (window._canvases||[]).forEach(canvas=>{
-      const ctx = canvas.getContext('2d');
-      ctx.globalAlpha=0.28;
-      ctx.fillStyle='#B33B3B';
-      ctx.font = Math.round(canvas.width*0.75)+'px "Noto Serif SC", serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(canvas.dataset.char, canvas.width/2, canvas.height/2+4);
-      ctx.globalAlpha=1;
-    });
+    (window._canvases||[]).forEach(canvas=>drawAnswerOverlay(canvas));
     document.getElementById('answerSlot').innerHTML = `
       <div class="answer-panel">
         <div class="han-big hanzi">${esc(card.han)}</div>
@@ -1344,7 +1354,7 @@ function renderRevealed(card){
   } else {
     const isStarred = review.starred && review.starred.has(card._key);
     document.getElementById('reviewFoot').innerHTML = `
-      ${deck==='hsk' ? '<button class="ghost small" style="width:100%;margin-bottom:8px;" onclick="clearAllCanvases()">지우기 (다시 써보기)</button>' : ''}
+      ${deck==='hsk' ? '<button class="ghost small" style="width:100%;margin-bottom:8px;" onclick="clearInkKeepOverlay()">지우기 (다시 써보기)</button>' : ''}
       <div class="sub" style="text-align:center;margin-bottom:6px;">직접 쓴 것과 비교해서 맞았는지 표시해주세요</div>
       <div class="hstack" style="align-items:stretch;">
         <div class="rate-row" style="flex:1;">
