@@ -123,6 +123,7 @@
     border-bottom:1px solid var(--line);
   }
   .review-progress{font-size:12px;color:var(--ink-soft);}
+  .review-card-no{font-size:13px;font-weight:700;color:var(--seal);}
   .review-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;align-items:center;gap:18px;}
   .big-hanzi{font-family:'Noto Serif SC',serif;font-size:64px;font-weight:700;text-align:center;line-height:1.2;}
   .writing-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
@@ -221,6 +222,7 @@
 <div id="reviewOverlay">
   <div class="review-head">
     <button class="ghost small" onclick="closeReview()">닫기</button>
+    <span class="review-card-no" id="reviewCardNo"></span>
     <span class="review-progress" id="reviewProgress"></span>
   </div>
   <div class="review-body" id="reviewBody"></div>
@@ -1113,6 +1115,7 @@ function renderReviewStep(){
   if(!review) return;
   if(review.index >= review.queue.length){
     document.getElementById('reviewProgress').textContent='';
+    document.getElementById('reviewCardNo').textContent='';
     document.getElementById('reviewBody').innerHTML = `<div class="empty" style="border:none;">
       <div style="font-size:36px;margin-bottom:8px;">🎉</div>
       <div style="font-size:15px;color:var(--ink);font-weight:700;">오늘 복습 완료!</div>
@@ -1122,6 +1125,7 @@ function renderReviewStep(){
   }
   document.getElementById('reviewProgress').textContent = (review.index+1)+' / '+review.queue.length;
   const card = review.queue[review.index];
+  document.getElementById('reviewCardNo').textContent = (review.deck==='hsk' && card.no!=null) ? ('No.'+card.no) : '';
   if(review.stage==='question'){ renderQuestion(card); }
   else{ renderRevealed(card); }
 }
@@ -1167,7 +1171,6 @@ function renderQuestion(card){
   if(deck==='hsk'){
     const chars = card.han.split('');
     document.getElementById('reviewBody').innerHTML = `
-      <div class="sub" style="text-align:center;font-size:13px;">No.${esc(card.no)}</div>
       <div class="big-hanzi" style="font-size:26px;font-family:'Noto Sans KR',sans-serif;">${esc(card.ko)}</div>
       <div class="writing-row" id="writingRow"></div>
       ${pinyinInputBlock()}
@@ -1176,16 +1179,27 @@ function renderQuestion(card){
       <div class="hstack">
         <button class="primary" id="revealBtn" style="flex:1;" disabled onclick="revealCard()">정답 보기</button>
         <button class="ghost" style="flex:1;" onclick="skipToReveal()">모르겠어요</button>
-        <button class="ghost" style="flex:1;" onclick="clearAllCanvases()">지우기</button>
+      </div>
+      <div class="hstack" style="margin-top:8px;">
+        <button class="ghost" style="flex:1;" onclick="undoStroke()">획 지우기</button>
+        <button class="ghost" style="flex:1;" onclick="clearAllCanvases()">전체 지우기</button>
       </div>
     `;
     const row = document.getElementById('writingRow');
+    const gap = 10;
+    const maxTotal = 360;
+    const available = Math.min(maxTotal, window.innerWidth - 40);
+    const n = chars.length;
+    const perSize = Math.floor((available - gap*(n-1)) / n);
+    row.style.gap = gap+'px';
+    row.style.width = '100%';
+    row.style.maxWidth = maxTotal+'px';
     window._canvases = [];
+    window._strokeLog = [];
     chars.forEach(ch=>{
       const box = document.createElement('div');
       box.className='writing-box';
-      const size = chars.length>2 ? 100 : 150;
-      box.innerHTML = `<canvas class="wcanvas" width="${size}" height="${size}"></canvas>`;
+      box.innerHTML = `<canvas class="wcanvas" width="${perSize}" height="${perSize}"></canvas>`;
       row.appendChild(box);
       const canvas = box.querySelector('canvas');
       setupCanvas(canvas, ch);
@@ -1213,22 +1227,35 @@ function setupCanvas(canvas, ch){
   const ctx = canvas.getContext('2d');
   ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
   canvas.dataset.char = ch;
-  let drawing=false, lastX=0, lastY=0;
+  canvas._strokes = [];
+  let drawing=false, lastX=0, lastY=0, currentStroke=null;
   function pos(e){
     const r = canvas.getBoundingClientRect();
     const cx = (e.touches? e.touches[0].clientX : e.clientX) - r.left;
     const cy = (e.touches? e.touches[0].clientY : e.clientY) - r.top;
     return [cx,cy];
   }
-  function start(e){ drawing=true; [lastX,lastY]=pos(e); e.preventDefault(); }
+  function start(e){
+    drawing=true; [lastX,lastY]=pos(e);
+    currentStroke = [{x:lastX,y:lastY}];
+    e.preventDefault();
+  }
   function move(e){
     if(!drawing) return;
     const [x,y]=pos(e);
     ctx.strokeStyle='#20242A'; ctx.lineWidth=7; ctx.lineCap='round'; ctx.lineJoin='round';
     ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke();
+    if(currentStroke) currentStroke.push({x,y});
     [lastX,lastY]=[x,y]; e.preventDefault();
   }
-  function end(){ drawing=false; }
+  function end(){
+    if(drawing && currentStroke && currentStroke.length>1){
+      canvas._strokes.push(currentStroke);
+      window._strokeLog = window._strokeLog || [];
+      window._strokeLog.push(canvas);
+    }
+    drawing=false; currentStroke=null;
+  }
   canvas.addEventListener('pointerdown', start);
   canvas.addEventListener('pointermove', move);
   window.addEventListener('pointerup', end);
@@ -1236,11 +1263,31 @@ function setupCanvas(canvas, ch){
   canvas.addEventListener('touchmove', move, {passive:false});
   canvas.addEventListener('touchend', end);
 }
+function redrawCanvasStrokes(canvas){
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle='#20242A'; ctx.lineWidth=7; ctx.lineCap='round'; ctx.lineJoin='round';
+  (canvas._strokes||[]).forEach(stroke=>{
+    ctx.beginPath();
+    stroke.forEach((pt,i)=>{ if(i===0) ctx.moveTo(pt.x,pt.y); else ctx.lineTo(pt.x,pt.y); });
+    ctx.stroke();
+  });
+}
+function undoStroke(){
+  if(!window._strokeLog || window._strokeLog.length===0) return;
+  const canvas = window._strokeLog.pop();
+  if(canvas._strokes && canvas._strokes.length){
+    canvas._strokes.pop();
+    redrawCanvasStrokes(canvas);
+  }
+}
 function clearAllCanvases(){
   (window._canvases||[]).forEach(canvas=>{
+    canvas._strokes = [];
     const ctx = canvas.getContext('2d');
     ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
   });
+  window._strokeLog = [];
 }
 
 /* --- 정답 화면 --- */
@@ -1297,6 +1344,7 @@ function renderRevealed(card){
   } else {
     const isStarred = review.starred && review.starred.has(card._key);
     document.getElementById('reviewFoot').innerHTML = `
+      ${deck==='hsk' ? '<button class="ghost small" style="width:100%;margin-bottom:8px;" onclick="clearAllCanvases()">지우기 (다시 써보기)</button>' : ''}
       <div class="sub" style="text-align:center;margin-bottom:6px;">직접 쓴 것과 비교해서 맞았는지 표시해주세요</div>
       <div class="hstack" style="align-items:stretch;">
         <div class="rate-row" style="flex:1;">
