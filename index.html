@@ -602,6 +602,342 @@ const HSK2_RAW = `1\t大家\tdà jiā\teveryone; everybody\t여러분
 125\t虽然～但是～\tsuī rán… dàn shì …\talthough… but…\t비록 ~이지만
 126\t因为～所以～\tyīn wèi… suǒ yǐ …\tbecause… so…\t~이기 때문에, 그래서~`;
 
+/* 교재 단어 (사용자 손글씨 노트에서 옮김 — 한자는 뜻+병음을 보고 Claude가 채워 넣음) */
+const TEXTBOOK_VOCAB_RAW = `māma\t엄마
+bàba\t아빠
+jiějie\t누나/언니
+gēge\t형/오빠
+mèimei\t여동생
+dìdi\t남동생
+yéye\t할아버지
+nǎinai\t할머니
+xièxie\t고마워요
+duìbuqǐ\t미안해요
+bú kèqi\t천만에요
+méi guānxi\t괜찮아요
+kěyǐ\t괜찮아요(허락)
+gāo\t(키가) 크다
+ǎi\t(키가) 작다
+kě\t목마르다
+è\t배고프다
+tīng\t듣다
+lái\t오다
+gěi\t주다
+hē\t마시다
+mǎi\t사다
+yī\t1
+èr\t2
+sān\t3
+sì\t4
+wǔ\t5
+liù\t6
+qī\t7
+bā\t8
+jiǔ\t9
+shí\t10
+gōngsī zhíyuán\t회사원
+Hánguórén\t한국인
+Zhōngguórén\t중국인
+Měiguórén\t미국인
+wǒmen\t우리
+kāfēi\t커피
+kělè\t콜라
+bǐsà\t피자
+chī\t먹다
+xuésheng\t학생
+lǎoshī\t선생님
+tāmen\t그들
+dōu\t모두
+miànbāo\t빵
+hànbǎobāo\t햄버거
+niúnǎi\t우유
+píjiǔ\t맥주
+xiāngjiāo\t바나나
+dàjiā\t여러분
+shì\t~이다
+shénme\t무엇
+shū\t책
+běnzi\t노트
+bēizi\t컵/잔
+kuàizi\t젓가락
+shuǐguǒ\t과일
+wáwa\t인형
+wàzi\t양말
+yīfu\t옷
+shūbāo\t가방
+nǎr\t어디
+xuéxiào\t학교
+túshūguǎn\t도서관
+yínháng\t은행
+yīyuàn\t병원
+chāoshì\t마트
+fànguǎnr\t음식점/식당
+yǒu\t있다
+méiyǒu\t없다
+péngyou\t친구
+tóngxué\t반친구
+tóngshì\t동료
+nánpéngyou\t남자친구
+nǚpéngyou\t여자친구
+yǐzi\t의자
+chuáng\t침대
+diànshì\tTV
+diànnǎo\t컴퓨터
+kōngtiáo\t에어컨
+shǒujī\t핸드폰
+qù\t가다
+guì\t비싸다
+piányi\t싸다
+zhè\t이것
+nà\t저것
+nǎ\t어느
+zhège\t이것(지시)
+nàge\t저것/그것
+nǎge\t어느것
+zhèr\t여기
+nàr\t저기/거기
+nǎr\t어느곳
+hǎokàn\t보기좋다/예쁘다
+bú tài\t그다지 ~하지않다
+hǎochī\t맛있다(음식)
+hǎohē\t맛있다(음료)
+hěn\t아주(강조)
+fēicháng\t아주/매우
+tèbié\t아주/매우
+zuì\t가장/최고로
+yǒumíng\t유명하다
+yǎnjīng\t눈(eyes)
+dōngxi\t물건
+kùn\t졸리다
+duō\t많다
+qìchē\t자동차
+gōnggòng qìchē\t버스
+chūzūchē\t택시
+dìtiě\t지하철
+gāotiě\t고속철도
+gòngxiǎng dānchē\t공용자전거
+yǒu yìsi\t재미있다
+Hànyǔ\t중국어
+Hányǔ\t한국어
+hànzì\t한자
+xué\t~을 배우다/공부하다
+xiě\t쓰다
+xié\t신발
+shōu\t받다/거두다
+zuò\t하다/만들다
+cài\t요리/음식
+mǐfàn\t밥
+dàngāo\t케이크
+chá\t차
+kāfēidiàn\t카페
+jiā\t집
+Shǒu'ěr\t서울
+Fǔshān\t부산
+Jìzhōu\t제주
+yīshēng\t의사
+hùshi\t간호사
+xiànzài\t지금
+shūdiàn\t서점
+Xīngbākè\t스타벅스
+bīng měishì kāfēi\t아이스아메리카노
+rè měishì kāfēi\t뜨거운 아메리카노
+xiǎobēi\t스몰사이즈
+zhōngbēi\t톨사이즈
+dàbēi\t그란데사이즈
+chāodàbēi\t벤티사이즈
+duō\t얼마나(형용사 앞)
+duōshǎo\t몇/얼마나
+jǐ\t몇(10 이하)
+zěnme\t어떻게/왜
+zěnmeyàng\t어때?
+zěnme le\t왜그래?
+diǎn\t(시각) 시
+bàn\t절반
+fēn\t분
+liǎng diǎn\t2시
+líng\t숫자 0
+liǎng\t숫자 2(양사 앞)
+bǎi\t숫자 100
+chà\t모자라다/차이나다
+shàng kè\t수업하다
+xià kè\t수업이 끝나다
+shàng bān\t출근하다
+xià bān\t퇴근하다
+qǐ chuáng\t일어나다
+shuì jiào\t잠자다
+zǎo fàn\t아침밥
+wǔ fàn\t점심밥
+wǎn fàn\t저녁밥
+shuā yá\t양치하다
+xǐ zǎo\t샤워하다/목욕하다
+chuān yīfu\t옷을 입다
+sānmíngzhì\t샌드위치
+règǒu\t핫도그
+hé\t~와(and)
+bù hǎoyìsi\t미안해요
+yào\t~하려고 해/~해야해(+동사)
+yào\t원하다/필요하다(+명사)
+bēi\t~잔/컵(양사)
+děng\t기다리다
+yíxià\t좀 ~하다/한번 ~하다
+jiāo\t가르치다
+sòng\t선물하다/보내다
+xìng\t성이 ~이다
+guìxìng\t성함이 어떻게 되세요(높임)
+jiào\t~라고 부르다
+míngzi\t이름
+rènshi\t알다/인식하다
+gāoxìng\t기쁘다/즐겁다
+jiàndào\t만나게 되다
+zuìjìn\t요즘/최근
+zǎoshang\t아침
+zǎoshang hǎo\t안녕하세요(아침인사)
+zhōngwǔ\t정오
+zhōngwǔ hǎo\t안녕하세요(점심인사)
+wǔ'ān\t안녕하세요(점심)
+wǎnshang\t저녁
+wǎnshang hǎo\t안녕하세요(저녁인사)
+wǎn'ān\t안녕히 주무세요
+zǎo'ān\t안녕히 주무셨어요?
+zàijiàn\t다시 만나요
+míngtiān jiàn\t내일 만나요
+Rìběn\t일본
+Yīngguó\t영국
+Fǎguó\t프랑스
+Shànghǎi\t상해
+shīfu\t사부(기사님/전문가)
+nǚshì\t여사
+fúwùyuán\t종업원
+kǒu\t식구(사람 세는 양사)
+shēntǐ\t신체/건강
+xiānsheng\t~씨/남편
+zhàngfu\t남편
+qīzi\t아내
+háizi\t자녀
+gèzi\t키
+gōngzuò\t일/일하다
+xiōngdì jiěmèi\t형제자매
+dà\t(나이가) 많다
+zài\t~에 있다/~에서/~하고 있다
+diànshìtái\t방송국
+suì\t~세(나이)
+niánjì\t연세/연령
+zhòng\t무겁다
+gōngjīn\t킬로그램
+mǐ\t미터
+xuéxí\t공부하다
+dàxué\t대학
+dàxuésheng\t대학생
+gōngwùyuán\t공무원
+jǐngchá\t경찰
+qiánbāo\t지갑
+ne\t~는요?
+shàngbian\t위쪽
+xiàbian\t아래쪽
+qiánbian\t앞쪽
+hòubian\t뒤쪽
+lǐbian\t안쪽
+wàibian\t바깥쪽
+zhōngjiān\t가운데
+zuǒbian\t왼쪽
+yòubian\t오른쪽
+pángbiān\t옆
+duìmiàn\t맞은편
+yǎnjìng\t안경
+shēngrì\t생일
+yuè\t월
+hào\t일(날짜)
+zhēnde\t정말
+zhù\t기원하다/빌다
+kuàilè\t즐겁다/유쾌하다
+jiù\t바로
+shàngwǔ\t오전
+xiàwǔ\t오후
+qiántiān\t그저께
+zuótiān\t어제
+jīntiān\t오늘
+míngtiān\t내일
+hòutiān\t모레
+qiánnián\t재작년
+qùnián\t작년
+jīnnián\t올해
+míngnián\t내년
+hòunián\t후년
+shàng ge yuè\t지난달
+zhège yuè\t이번달
+xià ge yuè\t다음달
+shàng ge xīngqī\t지난주
+zhège xīngqī\t이번주
+xià ge xīngqī\t다음주
+huà huàr\t그림을 그리다
+zuò cài\t요리를 하다
+tiào wǔ\t춤을 추다
+lǚyóu\t여행하다
+wán yóuxì\t게임하다
+ba\t~하자(권유)
+gēn\t~랑/~한테
+xiāngzi\t상자
+xiǎogǒu\t강아지
+gǒu\t개
+diànyǐngyuàn\t영화관
+dìtiězhàn\t지하철역
+měitiān\t매일
+yìqǐ\t함께
+kuài\t빨리/빠르다
+fā duǎnxìn\t문자메시지를 보내다
+dǎ diànhuà\t전화하다
+gōngyuán\t공원
+hái\t아직
+méi\t~하지 않았다(과거부정)
+sǐ le\t~해 죽겠다(강조)
+è sǐ le\t배고파 죽겠다
+shànglai\t올라오다
+xiàlai\t내려오다
+jìnlai\t들어오다
+chūlai\t나오다
+huílai\t돌아오다
+guòlai\t건너오다
+qǐlai\t일어나다
+shàngqu\t올라가다
+xiàqu\t내려가다
+jìnqu\t들어가다
+chūqu\t나가다
+huíqu\t돌아가다
+guòqu\t건너가다
+xǐshǒujiān\t화장실
+wǎngbā\tPC방
+yóujú\t우체국
+jiè\t빌리다
+sháozi\t숟가락
+càidān\t메뉴판
+dǎ bāo\t포장하다
+diǎn\t주문하다
+wàimài\t배달음식
+huì\t~할줄 알다/~일 것이다/모이다
+yìdiǎn\t조금/약간
+fāyīn\t발음
+búcuò\t좋다/괜찮다
+bú xiè\t천만에요
+bú yòng xiè\t천만에요
+yǒuyòng\t유용하다
+chàng gē\t노래를 부르다
+dǎ lánqiú\t농구를 하다
+tī zúqiú\t축구를 하다
+wéi\t여보세요(전화)
+gàn\t하다(구체적 행동)
+zhùzài\t~에 살다
+fùjìn\t근처/부근
+zuò zuòyè\t숙제를 하다
+pǎobù\t달리다
+sànbù\t산책하다
+xǐ wǎn\t설거지하다
+xǐ yīfu\t빨래하다
+xiūxi\t쉬다
+tán jítā\t기타를 치다
+tán gāngqín\t피아노를 치다
+tīng yīnyuè\t음악을 듣다
+zhīdào\t알다(지식)`;
+
 function parseHSKSeed(raw, level){
   return raw.trim().split('\n').map(line=>{
     const [no,han,py,en,ko] = line.split('\t');
@@ -653,6 +989,14 @@ async function ensureSeed(){
     const hsk2 = parseHSKSeed(HSK2_RAW, '2');
     hsk = hsk.concat(hsk2);
     await saveDeck('hsk-words', hsk);
+  }
+  const vocab = await loadDeck('textbook-vocab');
+  if(vocab.length===0){
+    const seeded = TEXTBOOK_VOCAB_RAW.trim().split('\n').map(line=>{
+      const [py,ko] = line.split('\t');
+      return {id:uid('vocab'), py, ko};
+    });
+    await saveDeck('textbook-vocab', seeded);
   }
 }
 
@@ -802,10 +1146,10 @@ async function renderVocabTab(){
 function renderSimpleList(wrapId, cards, q){
   const wrap = document.getElementById(wrapId);
   let filtered = cards;
-  if(q) filtered = filtered.filter(c=>(c.han+c.py+c.ko).toLowerCase().includes(q.toLowerCase()));
+  if(q) filtered = filtered.filter(c=>(c.py+c.ko).toLowerCase().includes(q.toLowerCase()));
   if(filtered.length===0){ wrap.innerHTML='<div class="empty">해당하는 항목이 없어요.</div>'; return; }
-  wrap.innerHTML = `<table class="list"><thead><tr><th>한자</th><th>병음</th><th>뜻</th></tr></thead><tbody>
-    ${filtered.map(c=>`<tr><td class="han">${esc(c.han)}</td><td>${esc(c.py)}</td><td>${esc(c.ko)}</td></tr>`).join('')}
+  wrap.innerHTML = `<table class="list"><thead><tr><th>병음</th><th>뜻</th></tr></thead><tbody>
+    ${filtered.map(c=>`<tr><td>${esc(c.py)}</td><td>${esc(c.ko)}</td></tr>`).join('')}
   </tbody></table>`;
 }
 
@@ -837,9 +1181,8 @@ async function renderExprTab(){
   if(cards.length>0){
     document.getElementById('exprListWrap').innerHTML = cards.map(c=>`
       <div class="card">
-        <div class="hanzi" style="font-size:18px;">${esc(c.han)}</div>
-        <div class="sub" style="margin:2px 0;">${esc(c.py)}</div>
-        <div style="font-size:13px;">${esc(c.ko)}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--jade);">${esc(c.py)}</div>
+        <div style="font-size:13px;margin-top:2px;">${esc(c.ko)}</div>
       </div>`).join('');
   }
 }
@@ -870,8 +1213,8 @@ function renderStarredListModal(){
     <div class="hstack" style="align-items:center;padding:6px 0;border-bottom:1px solid #F0EBDD;">
       ${c.no!=null ? `<span style="font-size:12px;color:var(--ink-soft);min-width:26px;">${esc(c.no)}.</span>` : ''}
       <div style="flex:1;">
-        <span class="hanzi" style="font-size:15px;">${esc(c.han)}</span>
-        <span style="font-size:12px;color:var(--ink-soft);margin-left:6px;">${esc(c.py)} · ${esc(c.ko)}</span>
+        ${deckName==='hsk' ? `<span class="hanzi" style="font-size:15px;">${esc(c.han)}</span> ` : ''}
+        <span style="font-size:12px;color:var(--ink-soft);">${esc(c.py)} · ${esc(c.ko)}</span>
         ${deckName==='hsk' ? `<span style="font-size:11px;color:var(--gold);margin-left:6px;">${esc(c.level)}급</span>` : ''}
       </div>
       <button class="star-btn-sm" onclick="toggleStarredListItem('${c.id}')">★</button>
@@ -937,10 +1280,10 @@ function openImport(deck){
   const cfg = {
     hsk:   {title:'HSK 단어 추가', ph:'한자[TAB]병음[TAB]영어뜻[TAB]한국어뜻', needLevel:true,
             hint:'한 줄에 한 단어씩, 아래 순서로 입력하세요 (탭으로 구분):\n한자    병음    영어뜻    한국어뜻\n\n예)\n爱好\tài hào\thobby\t취미'},
-    vocab: {title:'교재 단어 추가', ph:'한자[TAB]병음[TAB]한국어뜻', needLevel:false,
-            hint:'한 줄에 한 단어씩, 아래 순서로 입력하세요 (탭으로 구분):\n한자    병음    한국어뜻\n\n예)\n爱好\tài hào\t취미'},
-    expr:  {title:'교재 표현 추가', ph:'중국어 문장[TAB]병음[TAB]한국어뜻', needLevel:false,
-            hint:'한 줄에 한 표현씩, 아래 순서로 입력하세요 (탭으로 구분):\n중국어 문장    병음    한국어뜻\n\n예)\n没关系\tméi guān xi\t괜찮아요'}
+    vocab: {title:'교재 단어 추가', ph:'병음[TAB]한국어뜻', needLevel:false,
+            hint:'한 줄에 한 단어씩, 아래 순서로 입력하세요 (탭으로 구분, 한자는 필요 없어요):\n병음    한국어뜻\n\n예)\nài hào\t취미'},
+    expr:  {title:'교재 표현 추가', ph:'병음[TAB]한국어뜻', needLevel:false,
+            hint:'한 줄에 한 표현씩, 아래 순서로 입력하세요 (탭으로 구분, 한자는 필요 없어요):\n병음    한국어뜻\n\n예)\nméi guān xi\t괜찮아요'}
   }[deck];
   const modal = document.getElementById('modalContent');
   modal.innerHTML = `
@@ -948,7 +1291,7 @@ function openImport(deck){
     ${cfg.needLevel? `<label class="field-label">급수</label><input type="number" id="importLevel" min="1" max="9" value="2" style="margin-bottom:10px;">` : ''}
     <label class="field-label">붙여넣기 (엑셀/메모장에서 복사해도 됩니다 — 탭으로 구분된 표 형식)</label>
     <textarea id="importText" placeholder="${cfg.ph}"></textarea>
-    <div class="hint">${cfg.hint}\n\n※ PDF나 사진에서 정확하게 표를 옮기고 싶다면, Claude와의 채팅에 원본 파일을 올려서 표로 정리받은 뒤 여기에 붙여넣는 방법이 가장 정확해요.</div>
+    <div class="hint">${cfg.hint}</div>
     <div class="hstack" style="margin-top:6px;">
       <button class="ghost" onclick="closeModal()" style="flex:1;">취소</button>
       <button class="primary" onclick="submitImport('${deck}')" style="flex:1;">저장</button>
@@ -974,8 +1317,8 @@ async function submitImport(deck){
       existing.push({id:uid('hsk'), no: existing.length+1, han:han.trim(), py:py.trim(), en:en.trim(), ko:ko.trim(), level});
     } else {
       if(parts.length<2) return;
-      const [han,py,ko] = [parts[0], parts[1], parts[2]||''];
-      existing.push({id:uid(deck), han:han.trim(), py:py.trim(), ko:ko.trim()});
+      const [py,ko] = [parts[0], parts[1]];
+      existing.push({id:uid(deck), py:py.trim(), ko:ko.trim()});
     }
     added++;
   });
@@ -1215,8 +1558,8 @@ function renderQuestion(card){
   } else {
     const isExpr = deck==='expr';
     document.getElementById('reviewBody').innerHTML = `
-      <div class="big-hanzi" style="${isExpr?'font-size:26px;font-family:Noto Sans KR,sans-serif;':''}">${isExpr ? esc(card.ko) : esc(card.han)}</div>
-      ${isExpr ? '<div class="sub">이 뜻을 병음 문장으로 써보세요</div>' : '<div class="sub">병음을 써보세요</div>'}
+      <div class="big-hanzi" style="font-size:26px;font-family:Noto Sans KR,sans-serif;">${esc(card.ko)}</div>
+      ${isExpr ? '<div class="sub">이 뜻을 병음 문장으로 써보세요</div>' : '<div class="sub">이 뜻의 병음을 써보세요</div>'}
       ${pinyinInputBlock()}
     `;
     document.getElementById('reviewFoot').innerHTML = `
@@ -1343,11 +1686,9 @@ function renderRevealed(card){
       ${typedCompareHTML(card)}
     `;
   } else {
-    const isExpr = deck==='expr';
     document.getElementById('answerSlot').innerHTML = `
       <div class="answer-panel">
-        ${isExpr ? `<div class="han-big hanzi">${esc(card.han)}</div><div class="py">${esc(card.py)}</div>`
-                 : `<div class="py">${esc(card.py)}</div><div class="mean">${esc(card.ko)}${card.en?' · '+esc(card.en):''}</div>`}
+        <div class="py" style="font-size:24px;">${esc(card.py)}</div>
       </div>
       ${typedCompareHTML(card)}
     `;
