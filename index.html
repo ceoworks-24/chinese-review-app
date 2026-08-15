@@ -1291,6 +1291,8 @@ function openImport(deck){
     ${cfg.needLevel? `<label class="field-label">급수</label><input type="number" id="importLevel" min="1" max="9" value="2" style="margin-bottom:10px;">` : ''}
     <label class="field-label">붙여넣기 (엑셀/메모장에서 복사해도 됩니다 — 탭으로 구분된 표 형식)</label>
     <textarea id="importText" placeholder="${cfg.ph}"></textarea>
+    <div class="field-label" style="text-align:center;margin:6px 0 4px;">성조가 필요하면 커서를 입력창에 둔 채 눌러서 삽입하세요</div>
+    ${toneToolbar('importText')}
     <div class="hint">${cfg.hint}</div>
     <div class="hstack" style="margin-top:6px;">
       <button class="ghost" onclick="closeModal()" style="flex:1;">취소</button>
@@ -1480,19 +1482,20 @@ function renderReviewStep(){
 }
 
 /* --- 문제 화면 --- */
-function toneToolbar(){
+function toneToolbar(targetId){
+  targetId = targetId || 'pinyinInput';
   const groups = ['āáǎà','ēéěè','īíǐì','ōóǒò','ūúǔù','ǖǘǚǜ'];
   const rows = [[groups[0],groups[1]], [groups[2],groups[3]], [groups[4],groups[5]]];
   const rowHtml = rows.map(([g1,g2])=>`
     <div class="tone-row">
-      <div class="tone-group">${g1.split('').map(ch=>`<button type="button" class="tone-btn" onclick="insertTone('${ch}')">${ch}</button>`).join('')}</div>
-      <div class="tone-group">${g2.split('').map(ch=>`<button type="button" class="tone-btn" onclick="insertTone('${ch}')">${ch}</button>`).join('')}</div>
+      <div class="tone-group">${g1.split('').map(ch=>`<button type="button" class="tone-btn" onclick="insertTone('${ch}','${targetId}')">${ch}</button>`).join('')}</div>
+      <div class="tone-group">${g2.split('').map(ch=>`<button type="button" class="tone-btn" onclick="insertTone('${ch}','${targetId}')">${ch}</button>`).join('')}</div>
     </div>
   `).join('');
   return `<div class="tone-toolbar">${rowHtml}</div>`;
 }
-function insertTone(ch){
-  const el = document.getElementById('pinyinInput');
+function insertTone(ch, targetId){
+  const el = document.getElementById(targetId || 'pinyinInput');
   if(!el) return;
   const start = el.selectionStart ?? el.value.length;
   const end = el.selectionEnd ?? el.value.length;
