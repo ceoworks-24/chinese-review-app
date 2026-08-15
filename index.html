@@ -64,6 +64,11 @@
     display:flex;flex-direction:column;align-items:center;gap:3px;
   }
   nav.tabs button .ic{font-size:18px;}
+  nav.tabs button .ic.num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:20px;height:20px;border-radius:50%;border:1.5px solid currentColor;
+    font-size:12px;font-weight:700;
+  }
   nav.tabs button.active{color:var(--seal);font-weight:700;}
 
   section.view{display:none;padding:18px 20px 20px;}
@@ -219,9 +224,9 @@
 
   <nav class="tabs">
     <button class="tab-btn active" data-tab="home"><span class="ic">🏠</span>홈</button>
-    <button class="tab-btn" data-tab="hsk"><span class="ic">字</span>HSK 단어장</button>
-    <button class="tab-btn" data-tab="vocab"><span class="ic">詞</span>교재 단어</button>
-    <button class="tab-btn" data-tab="expr"><span class="ic">句</span>교재 표현</button>
+    <button class="tab-btn" data-tab="hsk"><span class="ic num">1</span>한자 암기</button>
+    <button class="tab-btn" data-tab="vocab"><span class="ic num">2</span>단어 암기</button>
+    <button class="tab-btn" data-tab="expr"><span class="ic num">3</span>표현 암기</button>
   </nav>
 </div>
 
@@ -1047,9 +1052,9 @@ async function renderHome(){
   }
   el.innerHTML = `
     <h2 class="section-title">오늘의 복습</h2>
-    ${deckCard('HSK 단어장','한자 쓰기 · 뜻 · 병음', hsk.length, hskRemain, 'hsk', `switchTab('hsk');setTimeout(()=>openReviewScope(),0)`)}
-    ${deckCard('교재 단어','뜻 · 병음', vocab.length, vocabRemain, 'vocab', `switchTab('vocab');setTimeout(()=>startReview('vocab'),0)`)}
-    ${deckCard('교재 표현','뜻 보고 병음 쓰기', expr.length, exprRemain, 'expr', `switchTab('expr');setTimeout(()=>startReview('expr'),0)`)}
+    ${deckCard('한자 암기','한자 쓰기 · 뜻 · 병음', hsk.length, hskRemain, 'hsk', `switchTab('hsk');setTimeout(()=>openReviewScope(),0)`)}
+    ${deckCard('단어 암기','뜻 · 병음', vocab.length, vocabRemain, 'vocab', `switchTab('vocab');setTimeout(()=>startReview('vocab'),0)`)}
+    ${deckCard('표현 암기','뜻 보고 병음 쓰기', expr.length, exprRemain, 'expr', `switchTab('expr');setTimeout(()=>startReview('expr'),0)`)}
   `;
 }
 
@@ -1136,7 +1141,7 @@ async function renderVocabTab(){
       </div>
     </div>
     <h2 class="section-title">전체 목록 (${cards.length})</h2>
-    ${cards.length===0 ? '<div class="empty">아직 추가된 단어가 없어요.<br>우측 상단 "+ 단어 추가"로 교재 단어를 넣어보세요.</div>' : `
+    ${cards.length===0 ? '<div class="empty">아직 추가된 단어가 없어요.<br>우측 상단 "+ 단어 추가"로 넣어보세요.</div>' : `
     <input type="text" id="vocabSearch" placeholder="병음/뜻 검색" style="margin-bottom:10px;">
     <div id="vocabListWrap"></div>`}
   `;
@@ -1191,7 +1196,7 @@ async function renderExprTab(){
       </div>
     </div>
     <h2 class="section-title">전체 목록 (${cards.length})</h2>
-    ${cards.length===0 ? '<div class="empty">아직 추가된 표현이 없어요.<br>우측 상단 "+ 표현 추가"로 교재 표현을 넣어보세요.</div>' : `
+    ${cards.length===0 ? '<div class="empty">아직 추가된 표현이 없어요.<br>우측 상단 "+ 표현 추가"로 넣어보세요.</div>' : `
     <div id="exprListWrap"></div>`}
   `;
   if(cards.length>0){
@@ -1312,7 +1317,7 @@ function closeStarredListModal(){
 }
 
 /* ---------------- 덱별 초기화 (학습 기록 / 즐겨찾기 분리) ---------------- */
-const DECK_LABEL = {hsk:'HSK 단어장', vocab:'교재 단어', expr:'교재 표현'};
+const DECK_LABEL = {hsk:'한자 암기', vocab:'단어 암기', expr:'표현 암기'};
 function openResetProgressConfirm(deckName){
   const modal = document.getElementById('modalContent');
   modal.innerHTML = `
@@ -1355,11 +1360,11 @@ async function doResetStarred(deckName){
 /* ---------------- IMPORT MODAL ---------------- */
 function openImport(deck){
   const cfg = {
-    hsk:   {title:'HSK 단어 추가', ph:'한자[TAB]병음[TAB]영어뜻[TAB]한국어뜻', needLevel:true,
+    hsk:   {title:'한자 추가', ph:'한자[TAB]병음[TAB]영어뜻[TAB]한국어뜻', needLevel:true,
             hint:'한 줄에 한 단어씩, 아래 순서로 입력하세요 (탭으로 구분):\n한자    병음    영어뜻    한국어뜻\n\n예)\n爱好\tài hào\thobby\t취미'},
-    vocab: {title:'교재 단어 추가', ph:'병음[TAB]한국어뜻', needLevel:false,
+    vocab: {title:'단어 추가', ph:'병음[TAB]한국어뜻', needLevel:false,
             hint:'한 줄에 한 단어씩, 아래 순서로 입력하세요 (탭으로 구분, 한자는 필요 없어요):\n병음    한국어뜻\n\n예)\nài hào\t취미'},
-    expr:  {title:'교재 표현 추가', ph:'병음[TAB]한국어뜻', needLevel:false,
+    expr:  {title:'표현 추가', ph:'병음[TAB]한국어뜻', needLevel:false,
             hint:'한 줄에 한 표현씩, 아래 순서로 입력하세요 (탭으로 구분, 한자는 필요 없어요):\n병음    한국어뜻\n\n예)\nméi guān xi\t괜찮아요'}
   }[deck];
   const modal = document.getElementById('modalContent');
