@@ -1119,6 +1119,8 @@ async function renderVocabTab(){
   const starredCount = starredArr.filter(k=>k.startsWith('vocab:')).length;
   const clearedStarredSet = new Set(clearedStarredArr);
   const starredRemain = starredArr.filter(k=>k.startsWith('vocab:') && !clearedStarredSet.has(k)).length;
+  window._vocabCards = cards;
+  window._vocabStarred = new Set(starredArr);
   el.innerHTML = `
     <div class="row-between" style="margin-bottom:12px;">
       <div></div>
@@ -1135,22 +1137,36 @@ async function renderVocabTab(){
     </div>
     <h2 class="section-title">전체 목록 (${cards.length})</h2>
     ${cards.length===0 ? '<div class="empty">아직 추가된 단어가 없어요.<br>우측 상단 "+ 단어 추가"로 교재 단어를 넣어보세요.</div>' : `
-    <input type="text" id="vocabSearch" placeholder="한자/병음/뜻 검색" style="margin-bottom:10px;">
+    <input type="text" id="vocabSearch" placeholder="병음/뜻 검색" style="margin-bottom:10px;">
     <div id="vocabListWrap"></div>`}
   `;
   if(cards.length>0){
-    document.getElementById('vocabSearch').addEventListener('input', e=>renderSimpleList('vocabListWrap', cards, e.target.value));
-    renderSimpleList('vocabListWrap', cards, '');
+    document.getElementById('vocabSearch').addEventListener('input', e=>renderVocabList(e.target.value));
+    renderVocabList('');
   }
 }
-function renderSimpleList(wrapId, cards, q){
-  const wrap = document.getElementById(wrapId);
-  let filtered = cards;
+function renderVocabList(q){
+  const wrap = document.getElementById('vocabListWrap');
+  const cards = window._vocabCards;
+  let filtered = cards.map((c,i)=>({...c, _no:i+1}));
   if(q) filtered = filtered.filter(c=>(c.py+c.ko).toLowerCase().includes(q.toLowerCase()));
   if(filtered.length===0){ wrap.innerHTML='<div class="empty">해당하는 항목이 없어요.</div>'; return; }
-  wrap.innerHTML = `<table class="list"><thead><tr><th>병음</th><th>뜻</th></tr></thead><tbody>
-    ${filtered.map(c=>`<tr><td>${esc(c.py)}</td><td>${esc(c.ko)}</td></tr>`).join('')}
+  wrap.innerHTML = `<table class="list"><thead><tr><th>#</th><th>병음</th><th>뜻</th><th>★</th></tr></thead><tbody>
+    ${filtered.map(c=>{
+      const starred = window._vocabStarred && window._vocabStarred.has('vocab:'+c.id);
+      return `<tr><td style="color:var(--ink-soft);font-size:12px;">${c._no}</td><td>${esc(c.py)}</td><td>${esc(c.ko)}</td><td><button class="star-btn-sm" onclick="toggleVocabStar('${c.id}')">${starred?'★':'☆'}</button></td></tr>`;
+    }).join('')}
   </tbody></table>`;
+}
+async function toggleVocabStar(id){
+  const key = 'vocab:'+id;
+  const arr = await getStarredKeys();
+  const set = new Set(arr);
+  if(set.has(key)) set.delete(key); else set.add(key);
+  await setStarredKeys(Array.from(set));
+  window._vocabStarred = set;
+  const q = document.getElementById('vocabSearch') ? document.getElementById('vocabSearch').value : '';
+  renderVocabList(q);
 }
 
 /* ---------------- EXPR TAB ---------------- */
