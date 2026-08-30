@@ -254,6 +254,36 @@
 <div class="toast" id="toast"></div>
 
 <script>
+/* ---------------- 스마트폰 뒤로가기 버튼 대응 ----------------
+   모달이나 복습 화면이 열려있을 때 뒤로가기를 누르면 앱이 종료되지 않고
+   그 화면만 닫히도록, 열 때마다 히스토리를 한 칸 쌓아두고 뒤로가기(popstate)를 가로챕니다. */
+let overlayPushed = false;
+function pushOverlayState(){
+  if(!overlayPushed){
+    overlayPushed = true;
+    history.pushState({appOverlay:true}, '');
+  }
+}
+function consumeOverlayState(){
+  if(overlayPushed){
+    overlayPushed = false;
+    history.back();
+  }
+}
+window.addEventListener('popstate', function(){
+  overlayPushed = false;
+  const modalBg = document.getElementById('modalBg');
+  const reviewOverlay = document.getElementById('reviewOverlay');
+  if(modalBg.classList.contains('active')){
+    modalBg.classList.remove('active');
+  }
+  if(reviewOverlay.classList.contains('active')){
+    reviewOverlay.classList.remove('active');
+    review = null;
+    TAB_RENDER[document.querySelector('.tab-btn.active').dataset.tab]();
+  }
+});
+
 /* ---------------- storage helpers (브라우저 localStorage 사용 — 로그인 불필요) ---------------- */
 async function sGet(key){
   try{ const raw = localStorage.getItem(key); return raw===null ? null : JSON.parse(raw); }
@@ -1074,7 +1104,7 @@ function homeDeckCard(deckName, title, sub, general, starred, mission, generalSt
       </div>
     </div>
     <div class="hstack home-subtabs" style="margin-top:10px;">
-      <button class="subtab-btn ${active==='general'?'active':''}" onclick="setHomeSubTab('${deckName}','general')">일반</button>
+      <button class="subtab-btn ${active==='general'?'active':''}" onclick="setHomeSubTab('${deckName}','general')">전체</button>
       <button class="subtab-btn ${active==='starred'?'active':''}" onclick="setHomeSubTab('${deckName}','starred')">⭐ 즐겨찾기</button>
       <button class="subtab-btn ${active==='mission'?'active':''}" onclick="setHomeSubTab('${deckName}','mission')">📅 미션</button>
     </div>
@@ -1257,6 +1287,7 @@ async function openEditWord(deckName, id){
     </div>
   `;
   document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
 }
 async function saveEditWord(deckName, id){
   const deckKey = deckName==='hsk' ? 'hsk-words' : (deckName==='vocab' ? 'textbook-vocab' : 'textbook-expr');
@@ -1303,6 +1334,7 @@ async function openStarredList(deckName){
     <button class="ghost" style="width:100%;margin-top:12px;" onclick="closeStarredListModal()">닫기</button>
   `;
   document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
   renderStarredListModal();
 }
 function renderStarredListModal(){
@@ -1368,6 +1400,15 @@ function addDistRange(){
   window._missionEdit.distRanges.push({level, from, to});
   renderMissionEditorModal();
 }
+function addDistRangeWholeLevel(){
+  const level = document.getElementById('distLevel').value;
+  const nos = window._missionEdit.cards.filter(c=>String(c.level)===String(level)).map(c=>Number(c.no));
+  if(nos.length===0){ toast('해당 급수에 단어가 없어요'); return; }
+  const from = Math.min(...nos);
+  const to = Math.max(...nos);
+  window._missionEdit.distRanges.push({level, from, to});
+  renderMissionEditorModal();
+}
 function removeDistRange(idx){
   window._missionEdit.distRanges.splice(idx,1);
   renderMissionEditorModal();
@@ -1382,9 +1423,12 @@ function distRangeSummaryHTML(){
       <div class="field-label">자동 배분 범위 (비워두면 전체 ${window._missionEdit.cards.length}개 사용)</div>
       <div class="hstack" style="margin-top:6px;flex-wrap:wrap;">
         <select id="distLevel" style="width:auto;">${window._missionEdit.levels.map(l=>`<option value="${l}">${l}급</option>`).join('')}</select>
+        <button type="button" class="ghost small" onclick="addDistRangeWholeLevel()">급수 전체 추가</button>
+      </div>
+      <div class="hstack" style="margin-top:6px;flex-wrap:wrap;">
         <input type="number" id="distFrom" placeholder="시작번호" style="width:80px;">
         <input type="number" id="distTo" placeholder="끝번호" style="width:80px;">
-        <button type="button" class="ghost small" onclick="addDistRange()">범위 추가</button>
+        <button type="button" class="ghost small" onclick="addDistRange()">번호 구간 추가</button>
       </div>
       <div style="margin-top:6px;">${chips || '<span class="sub">추가된 범위 없음</span>'}</div>
       <div class="sub" style="margin-top:4px;">현재 자동 배분 대상: <b style="color:var(--ink);">${pool.length}개</b></div>
@@ -1440,6 +1484,7 @@ function renderMissionEditorModal(){
     </div>
   `;
   document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
   renderMissionWordList('');
   document.querySelectorAll('.mission-day-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{ window._missionDay = Number(btn.dataset.day); renderMissionEditorModal(); });
@@ -1508,6 +1553,7 @@ async function startMissionReview(deckName){
   const starred = new Set(await getStarredKeys());
   review = {deck:deckName, queue, index:0, stage:'question', starred, mode:'mission'};
   document.getElementById('reviewOverlay').classList.add('active');
+  pushOverlayState();
   renderReviewStep();
 }
 function openResetMissionConfirm(deckName){
@@ -1521,6 +1567,7 @@ function openResetMissionConfirm(deckName){
     </div>
   `;
   document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
 }
 async function doResetMission(deckName){
   const cleared = await getClearedMission();
@@ -1543,6 +1590,7 @@ function openResetProgressConfirm(deckName){
     </div>
   `;
   document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
 }
 async function doResetProgress(deckName){
   const cleared = await getCleared();
@@ -1562,6 +1610,7 @@ function openResetStarredConfirm(deckName){
     </div>
   `;
   document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
 }
 async function doResetStarred(deckName){
   const clearedStarred = await getClearedStarred();
@@ -1596,8 +1645,12 @@ function openImport(deck){
     </div>
   `;
   document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
 }
-function closeModal(){ document.getElementById('modalBg').classList.remove('active'); }
+function closeModal(){
+  document.getElementById('modalBg').classList.remove('active');
+  consumeOverlayState();
+}
 
 async function submitImport(deck){
   const text = document.getElementById('importText').value.trim();
@@ -1654,6 +1707,7 @@ async function openReviewScope(){
     </div>
   `;
   document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
 
   renderScopeWordList('');
 
@@ -1736,6 +1790,7 @@ async function startReview(deckName, ids){
   const starred = new Set(await getStarredKeys());
   review = {deck:deckName, queue, index:0, stage:'question', starred, mode:'general'};
   document.getElementById('reviewOverlay').classList.add('active');
+  pushOverlayState();
   renderReviewStep();
 }
 async function reviewStarred(deckName){
@@ -1750,12 +1805,14 @@ async function reviewStarred(deckName){
   queue = shuffle(queue);
   review = {deck:deckName, queue, index:0, stage:'question', starred, mode:'starred'};
   document.getElementById('reviewOverlay').classList.add('active');
+  pushOverlayState();
   renderReviewStep();
 }
 function closeReview(){
   document.getElementById('reviewOverlay').classList.remove('active');
   review = null;
   TAB_RENDER[document.querySelector('.tab-btn.active').dataset.tab]();
+  consumeOverlayState();
 }
 
 function renderReviewStep(){
