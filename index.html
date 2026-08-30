@@ -71,6 +71,13 @@
   }
   nav.tabs button.active{color:var(--seal);font-weight:700;}
 
+  .home-subtabs{gap:6px;}
+  .subtab-btn{
+    flex:1;border:1px solid var(--line);background:#fff;border-radius:20px;
+    padding:6px 8px;font-family:inherit;font-size:12px;color:var(--ink-soft);cursor:pointer;
+  }
+  .subtab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:700;}
+
   section.view{display:none;padding:18px 20px 20px;}
   section.view.active{display:block;}
 
@@ -224,9 +231,9 @@
 
   <nav class="tabs">
     <button class="tab-btn active" data-tab="home"><span class="ic">🏠</span>홈</button>
-    <button class="tab-btn" data-tab="hsk"><span class="ic num">1</span>한자 암기</button>
-    <button class="tab-btn" data-tab="vocab"><span class="ic num">2</span>단어 암기</button>
-    <button class="tab-btn" data-tab="expr"><span class="ic num">3</span>표현 암기</button>
+    <button class="tab-btn" data-tab="hsk"><span class="ic num">1</span>한자 목록</button>
+    <button class="tab-btn" data-tab="vocab"><span class="ic num">2</span>단어 목록</button>
+    <button class="tab-btn" data-tab="expr"><span class="ic num">3</span>표현 목록</button>
   </nav>
 </div>
 
@@ -1030,90 +1037,91 @@ document.querySelectorAll('.tab-btn').forEach(b=>{
 });
 
 /* ---------------- HOME ---------------- */
+window._homeSubTab = window._homeSubTab || {hsk:'general', vocab:'general', expr:'general'};
+function setHomeSubTab(deckName, tab){
+  window._homeSubTab[deckName] = tab;
+  renderHome();
+}
+function homeDeckCard(deckName, title, sub, general, starred, mission, generalStartAction){
+  const active = window._homeSubTab[deckName];
+  let remain, total, body;
+  if(active==='starred'){
+    remain = starred.remain; total = starred.total;
+    body = `
+      <button class="primary small" ${starred.total===0?'disabled':''} onclick="reviewStarred('${deckName}')">즐겨찾기 복습</button>
+      <button class="ghost small" onclick="openStarredList('${deckName}')">목록</button>
+      <button class="ghost small" onclick="openResetStarredConfirm('${deckName}')">초기화</button>
+    `;
+  } else if(active==='mission'){
+    remain = mission.remain; total = mission.total;
+    body = `
+      <button class="primary small" ${mission.total===0?'disabled':''} onclick="startMissionReview('${deckName}')">오늘 미션 시작</button>
+      <button class="ghost small" onclick="openMissionEditor('${deckName}')">설정</button>
+      <button class="ghost small" onclick="openResetMissionConfirm('${deckName}')">초기화</button>
+    `;
+  } else {
+    remain = general.remain; total = general.total;
+    body = `
+      <button class="primary small" ${general.remain===0?'disabled':''} onclick="${generalStartAction}">복습 시작</button>
+      <button class="ghost small" onclick="openResetProgressConfirm('${deckName}')">초기화</button>
+    `;
+  }
+  return `<div class="card">
+    <div class="row-between">
+      <div><h3>${title}</h3><div class="sub">${sub}</div></div>
+      <div style="text-align:right;font-size:12.5px;color:var(--ink-soft);white-space:nowrap;">
+        <b style="color:${remain>0?'var(--seal)':'var(--jade)'};font-size:14px;">${remain}개</b> · 총 ${total}개
+      </div>
+    </div>
+    <div class="hstack home-subtabs" style="margin-top:10px;">
+      <button class="subtab-btn ${active==='general'?'active':''}" onclick="setHomeSubTab('${deckName}','general')">일반</button>
+      <button class="subtab-btn ${active==='starred'?'active':''}" onclick="setHomeSubTab('${deckName}','starred')">⭐ 즐겨찾기</button>
+      <button class="subtab-btn ${active==='mission'?'active':''}" onclick="setHomeSubTab('${deckName}','mission')">📅 미션</button>
+    </div>
+    <div class="hstack" style="margin-top:8px;flex-wrap:wrap;row-gap:8px;">${body}</div>
+  </div>`;
+}
 async function renderHome(){
   const el = document.getElementById('view-home');
   el.innerHTML = '<div class="empty">불러오는 중…</div>';
-  const [hsk, vocab, expr, rawScope, cleared, starredArr, missionScopeHsk, missionScopeVocab, missionScopeExpr, clearedMissionArr] = await Promise.all([
+  const [hsk, vocab, expr, rawScope, cleared, starredArr, missionScopeHsk, missionScopeVocab, missionScopeExpr, clearedMissionArr, clearedStarredArr] = await Promise.all([
     loadDeck('hsk-words'), loadDeck('textbook-vocab'), loadDeck('textbook-expr'),
     sGet('hsk-review-scope'), getCleared(), getStarredKeys(),
-    getMissionScope('hsk'), getMissionScope('vocab'), getMissionScope('expr'), getClearedMission()
+    getMissionScope('hsk'), getMissionScope('vocab'), getMissionScope('expr'), getClearedMission(), getClearedStarred()
   ]);
   const clearedSet = new Set(cleared);
-  function remainCount(deckName, cards){
-    return cards.filter(c=>!clearedSet.has(deckName+':'+c.id)).length;
-  }
-  const hskRemain = remainCount('hsk', hsk);
-  const vocabRemain = remainCount('vocab', vocab);
-  const exprRemain = remainCount('expr', expr);
-  function starCount(deckName){ return starredArr.filter(k=>k.startsWith(deckName+':')).length; }
-  function deckCard(title, sub, total, remain, tab, startAction){
-    return `<div class="card">
-      <div class="row-between">
-        <div><h3>${title}</h3><div class="sub">${sub}</div></div>
-        <div style="text-align:right;font-size:12.5px;color:var(--ink-soft);white-space:nowrap;">
-          <b style="color:${remain>0?'var(--seal)':'var(--jade)'};font-size:14px;">${remain}개</b> · 총 ${total}개
-        </div>
-      </div>
-      <div class="hstack" style="flex-wrap:wrap;row-gap:8px;">
-        <button class="primary small" ${remain===0?'disabled':''} onclick="${startAction}">복습 시작</button>
-        <button class="ghost small" onclick="openResetProgressConfirm('${tab}')">복습 초기화</button>
-        <button class="ghost small" onclick="reviewStarred('${tab}')">⭐ 즐겨찾기 복습 (${starCount(tab)})</button>
-        <button class="ghost small" onclick="openResetStarredConfirm('${tab}')">즐겨찾기 초기화</button>
-      </div>
-    </div>`;
-  }
-  const today = todayMissionIndex();
+  const clearedStarredSet = new Set(clearedStarredArr);
   const clearedMissionSet = new Set(clearedMissionArr);
-  function missionRow(label, deckName, scopeObj, tab){
+  const today = todayMissionIndex();
+
+  function general(deckName, cards){
+    return {remain: cards.filter(c=>!clearedSet.has(deckName+':'+c.id)).length, total: cards.length};
+  }
+  function starredInfo(deckName){
+    const total = starredArr.filter(k=>k.startsWith(deckName+':')).length;
+    const remain = starredArr.filter(k=>k.startsWith(deckName+':') && !clearedStarredSet.has(k)).length;
+    return {remain, total};
+  }
+  function missionInfoFor(deckName, scopeObj){
     const ids = scopeObj[today] || [];
     const remain = ids.filter(id=>!clearedMissionSet.has(deckName+':'+id)).length;
-    return `<div class="row-between" style="padding:8px 0;border-bottom:1px solid #F0EBDD;">
-      <div>${label} <span class="sub" style="margin-left:4px;">${remain}개 남음 · 오늘 ${ids.length}개</span></div>
-      <button class="ghost small" ${ids.length===0?'disabled':''} onclick="switchTab('${tab}');setTimeout(()=>startMissionReview('${tab}'),0)">시작</button>
-    </div>`;
+    return {remain, total: ids.length};
   }
+
   el.innerHTML = `
     <h2 class="section-title">오늘의 복습</h2>
-    ${deckCard('한자 암기','한자 쓰기 · 뜻 · 병음', hsk.length, hskRemain, 'hsk', `switchTab('hsk');setTimeout(()=>openReviewScope(),0)`)}
-    ${deckCard('단어 암기','뜻 · 병음', vocab.length, vocabRemain, 'vocab', `switchTab('vocab');setTimeout(()=>startReview('vocab'),0)`)}
-    ${deckCard('표현 암기','뜻 보고 병음 쓰기', expr.length, exprRemain, 'expr', `switchTab('expr');setTimeout(()=>startReview('expr'),0)`)}
-    <h2 class="section-title">📅 오늘의 미션 (${MISSION_DAYS[today]}요일)</h2>
-    <div class="card">
-      ${missionRow('한자 암기', 'hsk', missionScopeHsk, 'hsk')}
-      ${missionRow('단어 암기', 'vocab', missionScopeVocab, 'vocab')}
-      ${missionRow('표현 암기', 'expr', missionScopeExpr, 'expr')}
-    </div>
+    ${homeDeckCard('hsk','한자','한자 쓰기 · 뜻 · 병음', general('hsk',hsk), starredInfo('hsk'), missionInfoFor('hsk',missionScopeHsk), `openReviewScope()`)}
+    ${homeDeckCard('vocab','단어','뜻 · 병음', general('vocab',vocab), starredInfo('vocab'), missionInfoFor('vocab',missionScopeVocab), `startReview('vocab')`)}
+    ${homeDeckCard('expr','표현','뜻 보고 병음 쓰기', general('expr',expr), starredInfo('expr'), missionInfoFor('expr',missionScopeExpr), `startReview('expr')`)}
   `;
 }
 
 /* ---------------- HSK TAB ---------------- */
 let hskLevelFilter = 'all';
-function missionCardHTML(deckName, scopeObj, clearedMissionArr){
-  const today = todayMissionIndex();
-  const todayIds = scopeObj[today] || [];
-  const clearedSet = new Set(clearedMissionArr);
-  const todayRemain = todayIds.filter(id=>!clearedSet.has(deckName+':'+id)).length;
-  return `
-    <div class="card">
-      <h3>📅 요일별 미션 — ${MISSION_DAYS[today]}요일</h3>
-      <div class="sub">${todayRemain}개 남음 · 오늘 지정 ${todayIds.length}개</div>
-      <div class="hstack" style="flex-wrap:wrap;row-gap:8px;">
-        <button class="primary small" onclick="startMissionReview('${deckName}')">오늘 미션 시작</button>
-        <button class="ghost small" onclick="openMissionEditor('${deckName}')">미션 설정</button>
-        <button class="ghost small" onclick="openResetMissionConfirm('${deckName}')">미션 초기화</button>
-      </div>
-    </div>
-  `;
-}
 async function renderHskTab(){
   const el = document.getElementById('view-hsk');
-  const [cards, starredArr, clearedStarredArr, missionScope, clearedMissionArr] = await Promise.all([
-    loadDeck('hsk-words'), getStarredKeys(), getClearedStarred(), getMissionScope('hsk'), getClearedMission()
-  ]);
+  const [cards, starredArr] = await Promise.all([loadDeck('hsk-words'), getStarredKeys()]);
   const levels = [...new Set(cards.map(c=>String(c.level)))].sort();
-  const starredCount = starredArr.filter(k=>k.startsWith('hsk:')).length;
-  const clearedStarredSet = new Set(clearedStarredArr);
-  const starredRemain = starredArr.filter(k=>k.startsWith('hsk:') && !clearedStarredSet.has(k)).length;
   window._hskCards = cards;
   window._hskStarred = new Set(starredArr);
   el.innerHTML = `
@@ -1124,17 +1132,6 @@ async function renderHskTab(){
       </select>
       <button class="ghost small" onclick="openImport('hsk')">+ 단어 추가</button>
     </div>
-    <div class="card">
-      <h3>⭐ 즐겨찾기</h3>
-      <div class="sub">${starredRemain}개 남음 · 총 ${starredCount}개</div>
-      <div class="hstack" style="flex-wrap:wrap;row-gap:8px;">
-        <button class="primary small" onclick="reviewStarred('hsk')">즐겨찾기 복습</button>
-        <button class="ghost small" onclick="openStarredList('hsk')">즐겨찾기 목록</button>
-        <button class="ghost small" onclick="openResetStarredConfirm('hsk')">즐겨찾기 초기화</button>
-      </div>
-    </div>
-    ${missionCardHTML('hsk', missionScope, clearedMissionArr)}
-    <h2 class="section-title">전체 목록 (${cards.length})</h2>
     <input type="text" id="hskSearch" placeholder="한자/병음/뜻 검색" style="margin-bottom:10px;">
     <div id="hskListWrap"></div>
   `;
@@ -1168,12 +1165,7 @@ async function toggleListStar(id){
 /* ---------------- VOCAB TAB ---------------- */
 async function renderVocabTab(){
   const el = document.getElementById('view-vocab');
-  const [cards, starredArr, clearedStarredArr, missionScope, clearedMissionArr] = await Promise.all([
-    loadDeck('textbook-vocab'), getStarredKeys(), getClearedStarred(), getMissionScope('vocab'), getClearedMission()
-  ]);
-  const starredCount = starredArr.filter(k=>k.startsWith('vocab:')).length;
-  const clearedStarredSet = new Set(clearedStarredArr);
-  const starredRemain = starredArr.filter(k=>k.startsWith('vocab:') && !clearedStarredSet.has(k)).length;
+  const [cards, starredArr] = await Promise.all([loadDeck('textbook-vocab'), getStarredKeys()]);
   window._vocabCards = cards;
   window._vocabStarred = new Set(starredArr);
   el.innerHTML = `
@@ -1181,17 +1173,6 @@ async function renderVocabTab(){
       <div></div>
       <button class="ghost small" onclick="openImport('vocab')">+ 단어 추가</button>
     </div>
-    <div class="card">
-      <h3>⭐ 즐겨찾기</h3>
-      <div class="sub">${starredRemain}개 남음 · 총 ${starredCount}개</div>
-      <div class="hstack" style="flex-wrap:wrap;row-gap:8px;">
-        <button class="primary small" onclick="reviewStarred('vocab')">즐겨찾기 복습</button>
-        <button class="ghost small" onclick="openStarredList('vocab')">즐겨찾기 목록</button>
-        <button class="ghost small" onclick="openResetStarredConfirm('vocab')">즐겨찾기 초기화</button>
-      </div>
-    </div>
-    ${missionCardHTML('vocab', missionScope, clearedMissionArr)}
-    <h2 class="section-title">전체 목록 (${cards.length})</h2>
     ${cards.length===0 ? '<div class="empty">아직 추가된 단어가 없어요.<br>우측 상단 "+ 단어 추가"로 넣어보세요.</div>' : `
     <input type="text" id="vocabSearch" placeholder="병음/뜻 검색" style="margin-bottom:10px;">
     <div id="vocabListWrap"></div>`}
@@ -1228,28 +1209,12 @@ async function toggleVocabStar(id){
 /* ---------------- EXPR TAB ---------------- */
 async function renderExprTab(){
   const el = document.getElementById('view-expr');
-  const [cards, starredArr, clearedStarredArr, missionScope, clearedMissionArr] = await Promise.all([
-    loadDeck('textbook-expr'), getStarredKeys(), getClearedStarred(), getMissionScope('expr'), getClearedMission()
-  ]);
-  const starredCount = starredArr.filter(k=>k.startsWith('expr:')).length;
-  const clearedStarredSet = new Set(clearedStarredArr);
-  const starredRemain = starredArr.filter(k=>k.startsWith('expr:') && !clearedStarredSet.has(k)).length;
+  const [cards, starredArr] = await Promise.all([loadDeck('textbook-expr'), getStarredKeys()]);
   el.innerHTML = `
     <div class="row-between" style="margin-bottom:12px;">
       <div></div>
       <button class="ghost small" onclick="openImport('expr')">+ 표현 추가</button>
     </div>
-    <div class="card">
-      <h3>⭐ 즐겨찾기</h3>
-      <div class="sub">${starredRemain}개 남음 · 총 ${starredCount}개</div>
-      <div class="hstack" style="flex-wrap:wrap;row-gap:8px;">
-        <button class="primary small" onclick="reviewStarred('expr')">즐겨찾기 복습</button>
-        <button class="ghost small" onclick="openStarredList('expr')">즐겨찾기 목록</button>
-        <button class="ghost small" onclick="openResetStarredConfirm('expr')">즐겨찾기 초기화</button>
-      </div>
-    </div>
-    ${missionCardHTML('expr', missionScope, clearedMissionArr)}
-    <h2 class="section-title">전체 목록 (${cards.length})</h2>
     ${cards.length===0 ? '<div class="empty">아직 추가된 표현이 없어요.<br>우측 상단 "+ 표현 추가"로 넣어보세요.</div>' : `
     <div id="exprListWrap"></div>`}
   `;
@@ -1431,12 +1396,22 @@ function autoDistributeMission(){
   const pool = computeDistPool();
   const n = pool.length;
   if(n===0){ toast('배분할 단어가 없어요'); return; }
+  const snapshot = {};
+  for(let d=0; d<7; d++) snapshot[d] = new Set(scope[d]);
+  window._missionEdit.prevScope = snapshot;
   const perDay = Math.ceil(n/7);
   for(let d=0; d<7; d++){
     const chunk = pool.slice(d*perDay, (d+1)*perDay);
     scope[d] = new Set(chunk.map(c=>c.id));
   }
   toast('순서대로 7등분했어요 — 저장을 눌러야 반영돼요');
+  renderMissionEditorModal();
+}
+function undoAutoDistribute(){
+  if(!window._missionEdit.prevScope) return;
+  window._missionEdit.scope = window._missionEdit.prevScope;
+  window._missionEdit.prevScope = null;
+  toast('자동 배분을 취소했어요');
   renderMissionEditorModal();
 }
 function renderMissionEditorModal(){
@@ -1446,7 +1421,10 @@ function renderMissionEditorModal(){
   modal.innerHTML = `
     <h3>${DECK_LABEL[deckName]} 요일별 미션 설정</h3>
     ${distRangeSummaryHTML()}
-    <button type="button" class="ghost small" style="width:100%;margin:8px 0 10px;" onclick="autoDistributeMission()">🔀 자동 배분 (순서대로 7등분)</button>
+    <div class="hstack" style="margin:8px 0 10px;">
+      <button type="button" class="ghost small" style="flex:1;" onclick="autoDistributeMission()">🔀 자동 배분 (순서대로 7등분)</button>
+      <button type="button" class="ghost small" style="flex:1;" ${window._missionEdit.prevScope ? '' : 'disabled'} onclick="undoAutoDistribute()">↩️ 자동 배분 취소</button>
+    </div>
     <div class="hstack" id="missionDayTabs" style="flex-wrap:wrap;">
       ${MISSION_DAYS.map((label,i)=>`<button type="button" class="ghost small mission-day-btn" data-day="${i}" style="${i===day?'background:var(--seal);color:#fff;border-color:var(--seal);':''}">${label} (${scope[i].size})</button>`).join('')}
     </div>
@@ -1478,12 +1456,13 @@ function renderMissionEditorModal(){
 function renderMissionWordList(q){
   const {deckName, cards, scope} = window._missionEdit;
   const day = window._missionDay;
-  let list = cards;
+  let list = cards.map((c,i)=>({...c, _no: c.no!=null ? c.no : i+1}));
   if(q) list = list.filter(c=>((c.han||'')+c.py+c.ko).toLowerCase().includes(q.toLowerCase()));
   const wrap = document.getElementById('missionWordList');
   wrap.innerHTML = list.length ? list.map(c=>`
     <label class="hstack" style="align-items:center;padding:5px 0;border-bottom:1px solid #F0EBDD;">
       <input type="checkbox" class="mission-word" data-id="${c.id}" ${scope[day].has(c.id)?'checked':''}>
+      <span style="font-size:12px;color:var(--ink-soft);min-width:26px;">${esc(c._no)}.</span>
       ${deckName==='hsk' ? `<span class="hanzi" style="font-size:15px;min-width:40px;">${esc(c.han)}</span>` : ''}
       <span style="font-size:12.5px;color:var(--ink-soft);">${esc(c.py)} · ${esc(c.ko)}</span>
     </label>
@@ -1552,7 +1531,7 @@ async function doResetMission(deckName){
 }
 
 /* ---------------- 덱별 초기화 (학습 기록 / 즐겨찾기 분리) ---------------- */
-const DECK_LABEL = {hsk:'한자 암기', vocab:'단어 암기', expr:'표현 암기'};
+const DECK_LABEL = {hsk:'한자', vocab:'단어', expr:'표현'};
 function openResetProgressConfirm(deckName){
   const modal = document.getElementById('modalContent');
   modal.innerHTML = `
