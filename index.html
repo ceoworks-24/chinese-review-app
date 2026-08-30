@@ -1376,8 +1376,67 @@ async function openMissionEditor(deckName){
   const [cards, scopeObj] = await Promise.all([loadDeck(deckKey), getMissionScope(deckName)]);
   const scope = {};
   for(let d=0; d<7; d++) scope[d] = new Set(scopeObj[d]||[]);
-  window._missionEdit = {deckName, cards, scope};
+  const levels = deckName==='hsk' ? [...new Set(cards.map(c=>String(c.level)))].sort() : [];
+  window._missionEdit = {deckName, cards, scope, levels, distRanges:[]};
   window._missionDay = todayMissionIndex();
+  renderMissionEditorModal();
+}
+function computeDistPool(){
+  const {cards, distRanges} = window._missionEdit;
+  if(!distRanges || distRanges.length===0) return cards;
+  const seen = new Set();
+  const result = [];
+  distRanges.forEach(r=>{
+    cards.forEach(c=>{
+      if(String(c.level)===String(r.level) && Number(c.no)>=r.from && Number(c.no)<=r.to && !seen.has(c.id)){
+        seen.add(c.id); result.push(c);
+      }
+    });
+  });
+  return result;
+}
+function addDistRange(){
+  const level = document.getElementById('distLevel').value;
+  const from = Number(document.getElementById('distFrom').value);
+  const to = Number(document.getElementById('distTo').value);
+  if(!from || !to || from>to){ toast('번호 범위를 확인해주세요'); return; }
+  window._missionEdit.distRanges.push({level, from, to});
+  renderMissionEditorModal();
+}
+function removeDistRange(idx){
+  window._missionEdit.distRanges.splice(idx,1);
+  renderMissionEditorModal();
+}
+function distRangeSummaryHTML(){
+  const {deckName, distRanges} = window._missionEdit;
+  if(deckName!=='hsk') return '';
+  const pool = computeDistPool();
+  const chips = distRanges.map((r,i)=>`<span class="tone-btn" style="display:inline-flex;align-items:center;gap:4px;width:auto;padding:4px 8px;">${r.level}급 ${r.from}~${r.to}<button type="button" onclick="removeDistRange(${i})" style="border:none;background:none;color:var(--seal);cursor:pointer;font-weight:700;">✕</button></span>`).join(' ');
+  return `
+    <div class="hint" style="background:var(--paper-2);">
+      <div class="field-label">자동 배분 범위 (비워두면 전체 ${window._missionEdit.cards.length}개 사용)</div>
+      <div class="hstack" style="margin-top:6px;flex-wrap:wrap;">
+        <select id="distLevel" style="width:auto;">${window._missionEdit.levels.map(l=>`<option value="${l}">${l}급</option>`).join('')}</select>
+        <input type="number" id="distFrom" placeholder="시작번호" style="width:80px;">
+        <input type="number" id="distTo" placeholder="끝번호" style="width:80px;">
+        <button type="button" class="ghost small" onclick="addDistRange()">범위 추가</button>
+      </div>
+      <div style="margin-top:6px;">${chips || '<span class="sub">추가된 범위 없음</span>'}</div>
+      <div class="sub" style="margin-top:4px;">현재 자동 배분 대상: <b style="color:var(--ink);">${pool.length}개</b></div>
+    </div>
+  `;
+}
+function autoDistributeMission(){
+  const {scope} = window._missionEdit;
+  const pool = computeDistPool();
+  const n = pool.length;
+  if(n===0){ toast('배분할 단어가 없어요'); return; }
+  const perDay = Math.ceil(n/7);
+  for(let d=0; d<7; d++){
+    const chunk = pool.slice(d*perDay, (d+1)*perDay);
+    scope[d] = new Set(chunk.map(c=>c.id));
+  }
+  toast('순서대로 7등분했어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 function renderMissionEditorModal(){
@@ -1386,6 +1445,8 @@ function renderMissionEditorModal(){
   const modal = document.getElementById('modalContent');
   modal.innerHTML = `
     <h3>${DECK_LABEL[deckName]} 요일별 미션 설정</h3>
+    ${distRangeSummaryHTML()}
+    <button type="button" class="ghost small" style="width:100%;margin:8px 0 10px;" onclick="autoDistributeMission()">🔀 자동 배분 (순서대로 7등분)</button>
     <div class="hstack" id="missionDayTabs" style="flex-wrap:wrap;">
       ${MISSION_DAYS.map((label,i)=>`<button type="button" class="ghost small mission-day-btn" data-day="${i}" style="${i===day?'background:var(--seal);color:#fff;border-color:var(--seal);':''}">${label} (${scope[i].size})</button>`).join('')}
     </div>
