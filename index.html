@@ -256,8 +256,12 @@
 <script>
 /* ---------------- 스마트폰 뒤로가기 버튼 대응 ----------------
    모달이나 복습 화면이 열려있을 때 뒤로가기를 누르면 앱이 종료되지 않고
-   그 화면만 닫히도록, 열 때마다 히스토리를 한 칸 쌓아두고 뒤로가기(popstate)를 가로챕니다. */
+   그 화면만 닫히도록, 열 때마다 히스토리를 한 칸 쌓아두고 뒤로가기(popstate)를 가로챕니다.
+   suppressNextPopstate는 "닫기 버튼 등으로 우리가 직접 history.back()을 호출한 경우"를
+   실제 사용자의 뒤로가기와 구분해서, 이미 처리한 닫기 동작을 중복 처리하지 않기 위한 플래그입니다. */
 let overlayPushed = false;
+let tabPushed = false;
+let suppressNextPopstate = false;
 function pushOverlayState(){
   if(!overlayPushed){
     overlayPushed = true;
@@ -267,10 +271,15 @@ function pushOverlayState(){
 function consumeOverlayState(){
   if(overlayPushed){
     overlayPushed = false;
+    suppressNextPopstate = true;
     history.back();
   }
 }
 window.addEventListener('popstate', function(){
+  if(suppressNextPopstate){
+    suppressNextPopstate = false;
+    return;
+  }
   const modalBg = document.getElementById('modalBg');
   const reviewOverlay = document.getElementById('reviewOverlay');
   const modalWasActive = modalBg.classList.contains('active');
@@ -1061,14 +1070,13 @@ async function ensureSeed(){
 /* ---------------- tab switching ---------------- */
 const TAB_RENDER = { home: renderHome, hsk: renderHskTab, vocab: renderVocabTab, expr: renderExprTab };
 
-let tabPushed = false;
 function switchTab(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
   TAB_RENDER[name]();
   if(name==='home'){
-    if(tabPushed){ tabPushed = false; history.back(); }
+    if(tabPushed){ tabPushed = false; suppressNextPopstate = true; history.back(); }
   } else if(!tabPushed){
     tabPushed = true;
     history.pushState({appTab:name}, '');
@@ -1214,7 +1222,7 @@ async function renderHskTab(){
       </select>
       <button class="ghost small" onclick="openImport('hsk')">+ 단어 추가</button>
     </div>
-    <input type="text" id="hskSearch" placeholder="한자/병음/뜻 검색" style="margin-bottom:10px;">
+    <input type="text" id="hskSearch" placeholder="한자/병음/뜻 검색" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-bottom:10px;">
     <div id="hskListWrap"></div>
   `;
   document.getElementById('hskLevelSel').addEventListener('change', e=>{ hskLevelFilter=e.target.value; renderHskTab(); });
@@ -1256,7 +1264,7 @@ async function renderVocabTab(){
       <button class="ghost small" onclick="openImport('vocab')">+ 단어 추가</button>
     </div>
     ${cards.length===0 ? '<div class="empty">아직 추가된 단어가 없어요.<br>우측 상단 "+ 단어 추가"로 넣어보세요.</div>' : `
-    <input type="text" id="vocabSearch" placeholder="병음/뜻 검색" style="margin-bottom:10px;">
+    <input type="text" id="vocabSearch" placeholder="병음/뜻 검색" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-bottom:10px;">
     <div id="vocabListWrap"></div>`}
   `;
   if(cards.length>0){
@@ -1484,6 +1492,7 @@ function distRangeSummaryHTML(){
       </div>
       <div style="margin-top:6px;">${chips || '<span class="sub">추가된 범위 없음</span>'}</div>
       <div class="sub" style="margin-top:4px;">현재 자동 배분 대상: <b style="color:var(--ink);">${pool.length}개</b></div>
+      <div class="sub" style="margin-top:6px;color:var(--seal);">⚠️ 범위만 추가하면 아직 요일에 반영 안 돼요. 아래 "🔀 자동 배분"을 눌러야 실제로 채워져요.</div>
     </div>
   `;
 }
@@ -1524,7 +1533,7 @@ function renderMissionEditorModal(){
     <div class="hstack" id="missionDayTabs" style="flex-wrap:wrap;">
       ${MISSION_DAYS.map((label,i)=>`<button type="button" class="ghost small mission-day-btn" data-day="${i}" style="${i===day?'background:var(--seal);color:#fff;border-color:var(--seal);':''}">${label} (${scope[i].size})</button>`).join('')}
     </div>
-    <input type="text" id="missionSearch" placeholder="검색" style="margin:10px 0 8px;">
+    <input type="text" id="missionSearch" placeholder="검색" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin:10px 0 8px;">
     <label class="hstack" style="align-items:center;margin-bottom:8px;">
       <input type="checkbox" id="missionAll">
       <span><b>${MISSION_DAYS[day]}요일 전체</b></span>
@@ -1690,6 +1699,10 @@ function openImport(deck){
     <textarea id="importText" placeholder="${cfg.ph}"></textarea>
     <div class="field-label" style="text-align:center;margin:6px 0 4px;">성조가 필요하면 커서를 입력창에 둔 채 눌러서 삽입하세요</div>
     ${toneToolbar('importText')}
+    <label class="hstack" style="align-items:center;margin-top:8px;">
+      <input type="checkbox" id="importStar">
+      <span>⭐ 추가하는 단어를 즐겨찾기에도 등록</span>
+    </label>
     <div class="hint">${cfg.hint}</div>
     <div class="hstack" style="margin-top:6px;">
       <button class="ghost" onclick="closeModal()" style="flex:1;">취소</button>
@@ -1707,28 +1720,35 @@ function closeModal(){
 async function submitImport(deck){
   const text = document.getElementById('importText').value.trim();
   if(!text){ toast('내용을 입력해주세요'); return; }
+  const wantStar = document.getElementById('importStar').checked;
   const level = deck==='hsk' ? (document.getElementById('importLevel').value || '2') : null;
   const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
   const deckKey = deck==='hsk' ? 'hsk-words' : (deck==='vocab' ? 'textbook-vocab' : 'textbook-expr');
   const existing = await loadDeck(deckKey);
-  let added = 0;
+  const newItems = [];
   lines.forEach(line=>{
     const parts = line.split('\t').length>1 ? line.split('\t') : line.split(/\s{2,}/);
     if(deck==='hsk'){
       if(parts.length<3) return;
       const [han,py,en,ko] = [parts[0], parts[1], parts[2]||'', parts[3]||parts[2]||''];
-      existing.push({id:uid('hsk'), no: existing.length+1, han:han.trim(), py:py.trim(), en:en.trim(), ko:ko.trim(), level});
+      const item = {id:uid('hsk'), no: existing.length+newItems.length+1, han:han.trim(), py:py.trim(), en:en.trim(), ko:ko.trim(), level};
+      existing.push(item); newItems.push(item);
     } else {
       if(parts.length<2) return;
       const [py,ko] = [parts[0], parts[1]];
-      existing.push({id:uid(deck), py:py.trim(), ko:ko.trim()});
+      const item = {id:uid(deck), py:py.trim(), ko:ko.trim()};
+      existing.push(item); newItems.push(item);
     }
-    added++;
   });
-  if(added===0){ toast('인식된 줄이 없어요. 형식을 확인해주세요'); return; }
+  if(newItems.length===0){ toast('인식된 줄이 없어요. 형식을 확인해주세요'); return; }
   await saveDeck(deckKey, existing);
+  if(wantStar){
+    const starred = await getStarredKeys();
+    newItems.forEach(item=>starred.push(deck+':'+item.id));
+    await setStarredKeys(starred);
+  }
   closeModal();
-  toast(added+'개 추가되었어요');
+  toast(newItems.length+'개 추가되었어요'+(wantStar?' (즐겨찾기 등록됨)':''));
   if(deck==='hsk') renderHskTab(); else if(deck==='vocab') renderVocabTab(); else renderExprTab();
 }
 
@@ -1743,7 +1763,7 @@ async function openReviewScope(){
   const modal = document.getElementById('modalContent');
   modal.innerHTML = `
     <h3>복습 범위 선택</h3>
-    <input type="text" id="scopeSearch" placeholder="한자/병음/뜻 검색" style="margin-bottom:10px;">
+    <input type="text" id="scopeSearch" placeholder="한자/병음/뜻 검색" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-bottom:10px;">
     <label class="hstack" style="align-items:center;margin-bottom:8px;">
       <input type="checkbox" id="scopeAll">
       <span><b>전체</b></span>
