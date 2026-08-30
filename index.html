@@ -271,16 +271,21 @@ function consumeOverlayState(){
   }
 }
 window.addEventListener('popstate', function(){
-  overlayPushed = false;
   const modalBg = document.getElementById('modalBg');
   const reviewOverlay = document.getElementById('reviewOverlay');
-  if(modalBg.classList.contains('active')){
-    modalBg.classList.remove('active');
-  }
-  if(reviewOverlay.classList.contains('active')){
-    reviewOverlay.classList.remove('active');
-    review = null;
-    TAB_RENDER[document.querySelector('.tab-btn.active').dataset.tab]();
+  const modalWasActive = modalBg.classList.contains('active');
+  const reviewWasActive = reviewOverlay.classList.contains('active');
+  if(modalWasActive || reviewWasActive){
+    overlayPushed = false;
+    if(modalWasActive) modalBg.classList.remove('active');
+    if(reviewWasActive){
+      reviewOverlay.classList.remove('active');
+      review = null;
+      TAB_RENDER[document.querySelector('.tab-btn.active').dataset.tab]();
+    }
+  } else if(tabPushed){
+    tabPushed = false;
+    switchTab('home');
   }
 });
 
@@ -1056,11 +1061,18 @@ async function ensureSeed(){
 /* ---------------- tab switching ---------------- */
 const TAB_RENDER = { home: renderHome, hsk: renderHskTab, vocab: renderVocabTab, expr: renderExprTab };
 
+let tabPushed = false;
 function switchTab(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
   TAB_RENDER[name]();
+  if(name==='home'){
+    if(tabPushed){ tabPushed = false; history.back(); }
+  } else if(!tabPushed){
+    tabPushed = true;
+    history.pushState({appTab:name}, '');
+  }
 }
 document.querySelectorAll('.tab-btn').forEach(b=>{
   b.addEventListener('click', ()=>switchTab(b.dataset.tab));
@@ -1106,7 +1118,7 @@ function homeDeckCard(deckName, title, sub, general, starred, mission, generalSt
     <div class="hstack home-subtabs" style="margin-top:10px;">
       <button class="subtab-btn ${active==='general'?'active':''}" onclick="setHomeSubTab('${deckName}','general')">전체</button>
       <button class="subtab-btn ${active==='starred'?'active':''}" onclick="setHomeSubTab('${deckName}','starred')">⭐ 즐겨찾기</button>
-      <button class="subtab-btn ${active==='mission'?'active':''}" onclick="setHomeSubTab('${deckName}','mission')">📅 미션</button>
+      <button class="subtab-btn ${active==='mission'?'active':''}" onclick="setHomeSubTab('${deckName}','mission')">📅 일일 미션</button>
     </div>
     <div class="hstack" style="margin-top:8px;flex-wrap:wrap;row-gap:8px;">${body}</div>
   </div>`;
@@ -1137,9 +1149,49 @@ async function renderHome(){
     const remain = ids.filter(id=>!clearedMissionSet.has(deckName+':'+id)).length;
     return {remain, total: ids.length};
   }
+  function weekStatus(){
+    const decks = [['hsk',missionScopeHsk], ['vocab',missionScopeVocab], ['expr',missionScopeExpr]];
+    const status = [];
+    for(let d=0; d<7; d++){
+      let hasAny = false, complete = true;
+      decks.forEach(([name,scope])=>{
+        const ids = scope[d] || [];
+        if(ids.length>0) hasAny = true;
+        const remain = ids.filter(id=>!clearedMissionSet.has(name+':'+id)).length;
+        if(remain>0) complete = false;
+      });
+      status.push(hasAny && complete);
+    }
+    return status;
+  }
+  function weeklyMissionCardHTML(){
+    const status = weekStatus();
+    const doneCount = status.filter(Boolean).length;
+    return `
+      <div class="card">
+        <div class="row-between">
+          <h3>🔥 이번 주 일일 미션</h3>
+          <span class="sub">${doneCount}/7일 완료</span>
+        </div>
+        <div class="hstack" style="justify-content:space-between;margin-top:8px;">
+          ${MISSION_DAYS.map((label,i)=>`
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <span style="font-size:11px;color:${i===today?'var(--seal)':'var(--ink-soft)'};font-weight:${i===today?'700':'400'};">${label}</span>
+              <div style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+                font-size:13px;background:${status[i]?'var(--jade)':'var(--paper-2)'};color:${status[i]?'#fff':'var(--ink-soft)'};
+                border:${i===today && !status[i]?'2px solid var(--seal)':'1px solid var(--line)'};">
+                ${status[i]?'✓':''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
 
   el.innerHTML = `
     <h2 class="section-title">오늘의 복습</h2>
+    ${weeklyMissionCardHTML()}
     ${homeDeckCard('hsk','한자','한자 쓰기 · 뜻 · 병음', general('hsk',hsk), starredInfo('hsk'), missionInfoFor('hsk',missionScopeHsk), `openReviewScope()`)}
     ${homeDeckCard('vocab','단어','뜻 · 병음', general('vocab',vocab), starredInfo('vocab'), missionInfoFor('vocab',missionScopeVocab), `startReview('vocab')`)}
     ${homeDeckCard('expr','표현','뜻 보고 병음 쓰기', general('expr',expr), starredInfo('expr'), missionInfoFor('expr',missionScopeExpr), `startReview('expr')`)}
