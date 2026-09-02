@@ -1531,7 +1531,12 @@ function renderMissionEditorModal(){
       <button type="button" class="ghost small" style="flex:1;" ${window._missionEdit.prevScope ? '' : 'disabled'} onclick="undoAutoDistribute()">↩️ 자동 배분 취소</button>
     </div>
     <div class="hstack" id="missionDayTabs" style="flex-wrap:wrap;">
-      ${MISSION_DAYS.map((label,i)=>`<button type="button" class="ghost small mission-day-btn" data-day="${i}" style="${i===day?'background:var(--seal);color:#fff;border-color:var(--seal);':''}">${label} (${scope[i].size})</button>`).join('')}
+      ${MISSION_DAYS.map((label,i)=>`
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+          <button type="button" class="ghost small mission-day-btn" data-day="${i}" style="${i===day?'background:var(--seal);color:#fff;border-color:var(--seal);':''}">${label} (${scope[i].size})</button>
+          <button type="button" class="ghost small" style="padding:2px 6px;font-size:11px;" ${scope[i].size===0?'disabled':''} onclick="startMissionReviewFromEditor('${deckName}', ${i})">▶ 시작</button>
+        </div>
+      `).join('')}
     </div>
     <input type="text" id="missionSearch" placeholder="검색" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin:10px 0 8px;">
     <label class="hstack" style="align-items:center;margin-bottom:8px;">
@@ -1600,22 +1605,27 @@ async function saveMissionScope(){
   toast('미션이 저장되었어요');
   if(deckName==='hsk') renderHskTab(); else if(deckName==='vocab') renderVocabTab(); else renderExprTab();
 }
-async function startMissionReview(deckName){
+async function startMissionReview(deckName, dayIndex){
+  const day = dayIndex!=null ? dayIndex : todayMissionIndex();
   const deckKey = deckName==='hsk' ? 'hsk-words' : (deckName==='vocab' ? 'textbook-vocab' : 'textbook-expr');
   const cards = await loadDeck(deckKey);
   const scopeObj = await getMissionScope(deckName);
-  const todayIds = new Set(scopeObj[todayMissionIndex()]||[]);
-  if(todayIds.size===0){ toast('오늘 요일에 지정된 미션 단어가 없어요. "미션 설정"에서 추가해보세요'); return; }
-  const pool = cards.filter(c=>todayIds.has(c.id));
+  const dayIds = new Set(scopeObj[day]||[]);
+  if(dayIds.size===0){ toast(MISSION_DAYS[day]+'요일에 지정된 미션 단어가 없어요. "미션 설정"에서 추가해보세요'); return; }
+  const pool = cards.filter(c=>dayIds.has(c.id));
   const clearedMission = new Set(await getClearedMission());
   let queue = computeQueue(deckName, pool, null, clearedMission);
-  if(queue.length===0){ toast('오늘 미션 완료! "미션 초기화"를 누르면 다시 볼 수 있어요'); return; }
+  if(queue.length===0){ toast(MISSION_DAYS[day]+'요일 미션 완료! "미션 초기화"를 누르면 다시 볼 수 있어요'); return; }
   queue = shuffle(queue);
   const starred = new Set(await getStarredKeys());
   review = {deck:deckName, queue, index:0, stage:'question', starred, mode:'mission'};
   document.getElementById('reviewOverlay').classList.add('active');
   pushOverlayState();
   renderReviewStep();
+}
+function startMissionReviewFromEditor(deckName, dayIndex){
+  closeModal();
+  startMissionReview(deckName, dayIndex);
 }
 function openResetMissionConfirm(deckName){
   const modal = document.getElementById('modalContent');
