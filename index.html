@@ -1208,7 +1208,7 @@ async function renderHome(){
     }
     const streak = computeStreak(missionLog);
     const streakEl = document.getElementById('streakDisplay');
-    if(streakEl) streakEl.textContent = streak>0 ? ('🔥'+streak+'일 연속') : '';
+    if(streakEl) streakEl.textContent = '🔥'+streak+'일 연속';
   }
 
   function general(deckName, cards){
@@ -1592,24 +1592,24 @@ function distRangeSummaryHTML(){
   const pool = computeDistPool();
   const chips = distRanges.map((r,i)=>`<span class="tone-btn" style="display:inline-flex;align-items:center;gap:4px;width:auto;padding:4px 8px;">${r.label}<button type="button" onclick="removeDistRange(${i})" style="border:none;background:none;color:var(--seal);cursor:pointer;font-weight:700;">✕</button></span>`).join(' ');
   const inputBlock = deckName==='hsk' ? `
-    <div class="hstack" style="margin-top:6px;flex-wrap:wrap;">
+    <div class="hstack" style="margin-top:4px;flex-wrap:wrap;">
       <select id="distLevel" style="width:auto;">${window._missionEdit.levels.map(l=>`<option value="${l}">${l}급</option>`).join('')}</select>
       <button type="button" class="ghost small" onclick="addDistRangeWholeLevel()">급수 전체 추가</button>
     </div>
-    <div class="hstack" style="margin-top:6px;flex-wrap:wrap;">
+    <div class="hstack" style="margin-top:4px;flex-wrap:wrap;">
       <input type="number" id="distFrom" placeholder="시작번호" style="width:80px;">
       <input type="number" id="distTo" placeholder="끝번호" style="width:80px;">
       <button type="button" class="ghost small" onclick="addDistRange()">번호 구간 추가</button>
     </div>
   ` : `
-    <div class="hstack" style="margin-top:6px;flex-wrap:wrap;align-items:center;">
+    <div class="hstack" style="margin-top:4px;flex-wrap:wrap;align-items:center;">
       <button type="button" class="ghost small" onclick="addDistRangeAllExpr()">전체 추가</button>
       ${window._missionEdit.books.length>0 ? `
         <select id="distBook" style="width:auto;">${window._missionEdit.books.map(b=>`<option value="${b}">${b}권</option>`).join('')}</select>
         <button type="button" class="ghost small" onclick="addDistRangeWholeBook()">권 전체 추가</button>
       ` : '<span class="sub">권/과 정보가 있는 표현이 없어요</span>'}
     </div>
-    <div class="hstack" style="margin-top:6px;flex-wrap:wrap;align-items:center;">
+    <div class="hstack" style="margin-top:4px;flex-wrap:wrap;align-items:center;">
       <input type="number" id="distFromBook" placeholder="시작 권" style="width:70px;">
       <input type="number" id="distFromLesson" placeholder="시작 과" style="width:70px;">
       <span class="sub">~</span>
@@ -1619,12 +1619,12 @@ function distRangeSummaryHTML(){
     </div>
   `;
   return `
-    <div class="hint" style="background:var(--paper-2);">
-      <div class="field-label">자동 배분 범위 (비워두면 전체 ${window._missionEdit.cards.length}개 사용)</div>
+    <div class="hint" style="background:var(--paper-2);padding:8px 10px;">
+      ${deckName!=='hsk' ? `<div class="field-label">자동 배분 범위 (비워두면 전체 ${window._missionEdit.cards.length}개 사용)</div>` : ''}
       ${inputBlock}
-      <div style="margin-top:6px;">${chips || '<span class="sub">추가된 범위 없음</span>'}</div>
-      <div class="sub" style="margin-top:4px;">현재 자동 배분 대상: <b style="color:var(--ink);">${pool.length}개</b></div>
-      <div class="sub" style="margin-top:6px;color:var(--seal);">⚠️ 범위만 추가하면 아직 요일에 반영 안 돼요. 아래 "🔀 자동 배분"을 눌러야 실제로 채워져요.</div>
+      <div style="margin-top:4px;">${chips || '<span class="sub">추가된 범위 없음</span>'}</div>
+      <div class="sub" style="margin-top:2px;">현재 자동 배분 대상: <b style="color:var(--ink);">${pool.length}개</b></div>
+      <div class="sub" style="margin-top:4px;color:var(--seal);">⚠️ 자동 배분을 클릭해야 실제로 채워져요.</div>
     </div>
   `;
 }
@@ -1651,59 +1651,50 @@ function undoAutoDistribute(){
   toast('자동 배분을 취소했어요');
   renderMissionEditorModal();
 }
-function copyDayWords(){
-  const from = Number(document.getElementById('copyFromDay').value);
-  const to = Number(document.getElementById('copyToDay').value);
-  if(from===to){ toast('같은 요일이에요'); return; }
-  const {scope} = window._missionEdit;
-  scope[from].forEach(id=>scope[to].add(id));
-  toast(MISSION_DAYS[from]+'요일 단어를 '+MISSION_DAYS[to]+'요일에 추가했어요 — 저장을 눌러야 반영돼요');
-  renderMissionEditorModal();
-}
 async function importCurrentScopeToDay(){
   const raw = await sGet('hsk-review-scope');
   if(!raw || !Array.isArray(raw) || raw.length===0){ toast('저장된 복습 범위가 없어요 — "전체" 탭에서 먼저 범위를 체크해두세요'); return; }
-  const day = window._missionDay;
   const {scope} = window._missionEdit;
-  raw.forEach(id=>scope[day].add(id));
-  toast('현재 복습 범위(이번 주 새 단어)를 '+MISSION_DAYS[day]+'요일에 추가했어요 — 저장을 눌러야 반영돼요');
+  raw.forEach(id=>scope[6].add(id));
+  toast('현재 복습 범위(이번 주 새 단어)를 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 async function importStarredToDay(){
   const starred = await getStarredKeys();
   const ids = starred.filter(k=>k.startsWith('hsk:')).map(k=>k.slice(4));
   if(ids.length===0){ toast('즐겨찾기한 한자가 없어요'); return; }
-  const day = window._missionDay;
   const {scope} = window._missionEdit;
-  ids.forEach(id=>scope[day].add(id));
-  toast('즐겨찾기 한자를 '+MISSION_DAYS[day]+'요일에 추가했어요 — 저장을 눌러야 반영돼요');
+  ids.forEach(id=>scope[6].add(id));
+  toast('즐겨찾기 한자를 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 function addAllExprToDay(){
-  const day = window._missionDay;
   const {scope, cards} = window._missionEdit;
-  cards.forEach(c=>scope[day].add(c.id));
-  toast('표현 전체를 '+MISSION_DAYS[day]+'요일에 추가했어요 — 저장을 눌러야 반영돼요');
+  cards.forEach(c=>scope[6].add(c.id));
+  toast('표현 전체를 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 function addWholeBookToDay(){
   const book = Number(document.getElementById('exprDaySel').value);
-  const day = window._missionDay;
   const {scope, cards} = window._missionEdit;
   const matched = cards.filter(c=>Number(c.book)===book);
   if(matched.length===0){ toast('해당 권에 표현이 없어요'); return; }
-  matched.forEach(c=>scope[day].add(c.id));
-  toast(book+'권 전체를 '+MISSION_DAYS[day]+'요일에 추가했어요 — 저장을 눌러야 반영돼요');
+  matched.forEach(c=>scope[6].add(c.id));
+  toast(book+'권 전체를 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 async function importStarredExprToDay(){
   const starred = await getStarredKeys();
   const ids = starred.filter(k=>k.startsWith('expr:')).map(k=>k.slice(5));
   if(ids.length===0){ toast('즐겨찾기한 표현이 없어요'); return; }
-  const day = window._missionDay;
   const {scope} = window._missionEdit;
-  ids.forEach(id=>scope[day].add(id));
-  toast('즐겨찾기 표현을 '+MISSION_DAYS[day]+'요일에 추가했어요 — 저장을 눌러야 반영돼요');
+  ids.forEach(id=>scope[6].add(id));
+  toast('즐겨찾기 표현을 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
+  renderMissionEditorModal();
+}
+function clearSundayScope(){
+  window._missionEdit.scope[6] = new Set();
+  toast('일요일 설정을 비웠어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 function renderMissionEditorModal(){
@@ -1714,41 +1705,35 @@ function renderMissionEditorModal(){
     <h3>${DECK_LABEL[deckName]} 요일별 미션 설정</h3>
     <h2 class="section-title" style="margin-top:0;">📚 월~토 · 신규 학습 배분</h2>
     ${distRangeSummaryHTML()}
-    <div class="hstack" style="margin:8px 0 10px;">
+    <div class="hstack" style="margin:6px 0 8px;">
       <button type="button" class="ghost small" style="flex:1;" onclick="autoDistributeMission()">🔀 자동 배분 (월~토 6등분)</button>
       <button type="button" class="ghost small" style="flex:1;" ${window._missionEdit.prevScope ? '' : 'disabled'} onclick="undoAutoDistribute()">↩️ 자동 배분 취소</button>
     </div>
-    <h2 class="section-title">🔁 일요일 · 복습일 설정</h2>
-    <div class="hint" style="background:var(--paper-2);">
-      ${deckName==='vocab' ? `
-        <div class="field-label">요일 복사 (한 요일의 단어를 다른 요일에 더하기 — 복습일 만들 때 유용)</div>
-        <div class="hstack" style="margin-top:6px;align-items:center;">
-          <select id="copyFromDay" style="width:auto;">${MISSION_DAYS.map((l,i)=>`<option value="${i}">${l}</option>`).join('')}</select>
-          <span class="sub">→</span>
-          <select id="copyToDay" style="width:auto;">${MISSION_DAYS.map((l,i)=>`<option value="${i}" ${i===day?'selected':''}>${l}</option>`).join('')}</select>
-          <button type="button" class="ghost small" onclick="copyDayWords()">추가</button>
-        </div>
-      ` : ''}
+    <h2 class="section-title" style="margin-top:14px;">🔁 일요일 · 복습일 설정</h2>
+    <div class="hint" style="background:var(--paper-2);padding:8px 10px;">
       ${deckName==='hsk' ? `
-        <div class="field-label">현재 선택된 ${MISSION_DAYS[day]}요일에 추가</div>
-        <div class="hstack" style="margin-top:4px;">
-          <button type="button" class="ghost small" style="flex:1;" onclick="importCurrentScopeToDay()">[전체] 탭 — 이번 주 한자 범위 가져오기</button>
+        <div class="hstack">
+          <button type="button" class="ghost small" style="flex:1;" onclick="importCurrentScopeToDay()">[전체] 탭에서 범위 가져오기</button>
           <button type="button" class="ghost small" style="flex:1;" onclick="importStarredToDay()">⭐ 즐겨찾기 가져오기</button>
         </div>
       ` : ''}
       ${deckName==='expr' ? `
-        <div class="field-label">현재 선택된 ${MISSION_DAYS[day]}요일에 추가</div>
-        <div class="hstack" style="margin-top:4px;flex-wrap:wrap;">
+        <div class="hstack">
           <button type="button" class="ghost small" style="flex:1;" onclick="addAllExprToDay()">표현 전체 추가</button>
-          ${window._missionEdit.books.length>0 ? `
+          <button type="button" class="ghost small" style="flex:1;" onclick="importStarredExprToDay()">⭐ 즐겨찾기 가져오기</button>
+        </div>
+        ${window._missionEdit.books.length>0 ? `
+          <div class="hstack" style="margin-top:4px;">
             <select id="exprDaySel" style="width:auto;">${window._missionEdit.books.map(b=>`<option value="${b}">${b}권</option>`).join('')}</select>
             <button type="button" class="ghost small" onclick="addWholeBookToDay()">권 전체 추가</button>
-          ` : ''}
-        </div>
-        <button type="button" class="ghost small" style="width:100%;margin-top:6px;" onclick="importStarredExprToDay()">⭐ 즐겨찾기 가져오기</button>
+          </div>
+        ` : ''}
       ` : ''}
+      ${deckName==='vocab' ? `<div class="sub">아래 요일 탭에서 일요일을 선택하고, 체크박스로 직접 골라 담으세요</div>` : ''}
+      <div class="sub" style="margin-top:4px;">위 버튼들은 지금 보고 있는 요일과 상관없이 항상 일요일에 추가돼요</div>
+      <button type="button" class="ghost small" style="width:100%;margin-top:6px;color:var(--seal);" onclick="clearSundayScope()">일요일 비우기 (잘못 추가했을 때)</button>
     </div>
-    <div class="sub" style="margin-top:10px;">아래에서 요일별로 직접 확인·수정할 수 있어요</div>
+    <div class="sub" style="margin-top:8px;">아래에서 요일별로 직접 확인·수정할 수 있어요</div>
     <div class="hstack" id="missionDayTabs" style="flex-wrap:wrap;">
       ${MISSION_DAYS.map((label,i)=>`
         <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
@@ -2020,7 +2005,7 @@ async function openReviewScope(){
       ${levels.map(l=>`
         <span class="hstack" style="align-items:center;gap:4px;">
           <input type="checkbox" class="scope-level-check" data-level="${l}">
-          <span class="level-jump-label" data-level="${l}" style="cursor:pointer;color:var(--jade);font-weight:600;text-decoration:underline;font-size:13px;">${l}급 전체</span>
+          <span class="level-jump-label" data-level="${l}" style="cursor:pointer;color:var(--ink);font-weight:600;text-decoration:underline;font-size:13px;">${l}급 전체</span>
         </span>
       `).join('')}
     </div>
