@@ -45,15 +45,22 @@
   }
   .seal-mark{
     width:44px;height:44px;border-radius:50%;background:var(--paper-2);
-    font-size:26px;
+    font-size:26px;overflow:hidden;
     display:flex;align-items:center;justify-content:center;flex-shrink:0;
     border:1.5px solid var(--line);
   }
+  .seal-mark img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
   header.top h1{font-size:19px;margin:0;line-height:1.2;}
   header.top p{margin:2px 0 0;font-size:12px;color:var(--ink-soft);}
   .streak-badge{
     margin-left:auto;font-size:14px;font-weight:700;color:var(--seal);white-space:nowrap;
   }
+  @keyframes todayPulse{
+    0%{box-shadow:0 0 0 0 rgba(179,59,59,0.45);}
+    70%{box-shadow:0 0 0 8px rgba(179,59,59,0);}
+    100%{box-shadow:0 0 0 0 rgba(179,59,59,0);}
+  }
+  .today-pulse{animation:todayPulse 2s ease-out infinite;}
 
   nav.tabs{
     position:fixed;bottom:0;left:0;right:0;
@@ -213,10 +220,10 @@
 <div id="app">
 
   <header class="top">
-    <div class="seal-mark">🐼</div>
+    <div class="seal-mark"><img src="icon-192.png" alt="app icon"></div>
     <div>
-      <h1>중국어 복습</h1>
-      <p>나만의 중국어 단어장</p>
+      <h1>중국어 복습 App</h1>
+      <p>Made by Daniel</p>
     </div>
     <div id="streakDisplay" class="streak-badge"></div>
   </header>
@@ -1167,7 +1174,7 @@ function homeDeckCard(deckName, title, sub, general, starred, mission, generalSt
     <div class="row-between">
       <div><h3>${title}</h3><div class="sub">${sub}</div></div>
       <div style="text-align:right;font-size:12.5px;color:var(--ink-soft);white-space:nowrap;">
-        <b style="color:${remain>0?'var(--seal)':'var(--jade)'};font-size:14px;">${remain}개</b> · 총 ${total}개
+        잔여 <b style="color:${remain>0?'var(--seal)':'var(--jade)'};font-size:14px;">${remain}개</b> · 총 ${total}개
       </div>
     </div>
     <div class="hstack home-subtabs" style="margin-top:10px;">
@@ -1208,7 +1215,7 @@ async function renderHome(){
     }
     const streak = computeStreak(missionLog);
     const streakEl = document.getElementById('streakDisplay');
-    if(streakEl) streakEl.textContent = '🔥'+streak+'일 연속';
+    if(streakEl) streakEl.textContent = '🔥'+streak+'일 연속 성공 중';
   }
 
   function general(deckName, cards){
@@ -1252,7 +1259,7 @@ async function renderHome(){
           ${MISSION_DAYS.map((label,i)=>`
             <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
               <span style="font-size:11px;color:${i===today?'var(--seal)':'var(--ink-soft)'};font-weight:${i===today?'700':'400'};">${label}</span>
-              <div style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+              <div class="${i===today && !status[i]?'today-pulse':''}" style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
                 font-size:13px;background:${status[i]?'var(--jade)':'var(--paper-2)'};color:${status[i]?'#fff':'var(--ink-soft)'};
                 border:${i===today && !status[i]?'2px solid var(--seal)':'1px solid var(--line)'};">
                 ${status[i]?'✓':''}
@@ -1668,19 +1675,22 @@ async function importStarredToDay(){
   toast('즐겨찾기 한자를 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
-function addAllExprToDay(){
+function addRangeToSunday(){
+  const fb = Number(document.getElementById('sunFromBook').value);
+  const fl = Number(document.getElementById('sunFromLesson').value);
+  const tb = Number(document.getElementById('sunToBook').value);
+  const tl = Number(document.getElementById('sunToLesson').value);
+  if(!fb || !fl || !tb || !tl){ toast('권/과를 모두 입력해주세요'); return; }
+  const from = fb*1000+fl, to = tb*1000+tl;
+  if(from>to){ toast('시작이 끝보다 늦어요'); return; }
   const {scope, cards} = window._missionEdit;
-  cards.forEach(c=>scope[6].add(c.id));
-  toast('표현 전체를 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
-  renderMissionEditorModal();
-}
-function addWholeBookToDay(){
-  const book = Number(document.getElementById('exprDaySel').value);
-  const {scope, cards} = window._missionEdit;
-  const matched = cards.filter(c=>Number(c.book)===book);
-  if(matched.length===0){ toast('해당 권에 표현이 없어요'); return; }
+  const matched = cards.filter(c=>{
+    const key = (Number(c.book)||0)*1000+(Number(c.lesson)||0);
+    return key>=from && key<=to;
+  });
+  if(matched.length===0){ toast('해당 범위에 표현이 없어요'); return; }
   matched.forEach(c=>scope[6].add(c.id));
-  toast(book+'권 전체를 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
+  toast(fb+'권'+fl+'과 ~ '+tb+'권'+tl+'과를 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 async function importStarredExprToDay(){
@@ -1718,16 +1728,17 @@ function renderMissionEditorModal(){
         </div>
       ` : ''}
       ${deckName==='expr' ? `
-        <div class="hstack">
-          <button type="button" class="ghost small" style="flex:1;" onclick="addAllExprToDay()">표현 전체 추가</button>
+        <div class="hstack" style="flex-wrap:wrap;">
+          <input type="number" id="sunFromBook" placeholder="시작 권" style="width:60px;">
+          <input type="number" id="sunFromLesson" placeholder="시작 과" style="width:60px;">
+          <span class="sub">~</span>
+          <input type="number" id="sunToBook" placeholder="끝 권" style="width:60px;">
+          <input type="number" id="sunToLesson" placeholder="끝 과" style="width:60px;">
+        </div>
+        <div class="hstack" style="margin-top:4px;">
+          <button type="button" class="ghost small" style="flex:1;" onclick="addRangeToSunday()">권/과 범위 추가</button>
           <button type="button" class="ghost small" style="flex:1;" onclick="importStarredExprToDay()">⭐ 즐겨찾기 가져오기</button>
         </div>
-        ${window._missionEdit.books.length>0 ? `
-          <div class="hstack" style="margin-top:4px;">
-            <select id="exprDaySel" style="width:auto;">${window._missionEdit.books.map(b=>`<option value="${b}">${b}권</option>`).join('')}</select>
-            <button type="button" class="ghost small" onclick="addWholeBookToDay()">권 전체 추가</button>
-          </div>
-        ` : ''}
       ` : ''}
       ${deckName==='vocab' ? `<div class="sub">아래 요일 탭에서 일요일을 선택하고, 체크박스로 직접 골라 담으세요</div>` : ''}
       <div class="sub" style="margin-top:4px;">위 버튼들은 지금 보고 있는 요일과 상관없이 항상 일요일에 추가돼요</div>
