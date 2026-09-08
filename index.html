@@ -1741,15 +1741,15 @@ function groupAwareChunks(pool, numDays){
     if(!groupMap[key]){ groupMap[key]=[]; groupsOrder.push(key); }
     groupMap[key].push(c);
   });
-  const target = Math.ceil(pool.length/numDays);
+  // 큰 그룹부터 배정하되, 매번 "지금 가장 적게 채워진 요일"에 넣어서 최대한 균등하게 맞춤
+  const groupsSorted = groupsOrder.slice().sort((a,b)=> groupMap[b].length - groupMap[a].length);
   const days = Array.from({length:numDays}, ()=>[]);
-  let dayIdx = 0;
-  groupsOrder.forEach(key=>{
-    const items = groupMap[key];
-    if(days[dayIdx].length>0 && days[dayIdx].length+items.length>target && dayIdx<numDays-1){
-      dayIdx++;
+  groupsSorted.forEach(key=>{
+    let minIdx = 0;
+    for(let d=1; d<numDays; d++){
+      if(days[d].length < days[minIdx].length) minIdx = d;
     }
-    days[dayIdx].push(...items);
+    days[minIdx].push(...groupMap[key]);
   });
   return days;
 }
@@ -1764,7 +1764,7 @@ function autoDistributeMission(){
   if(deckName==='expr' && pool.some(c=>c.group)){
     const chunks = groupAwareChunks(pool, 6);
     for(let d=0; d<6; d++){ scope[d] = new Set(chunks[d].map(c=>c.id)); }
-    toast('대화문/예문 그룹을 유지하며 월~토에 배분했어요 (일요일은 그대로) — 저장을 눌러야 반영돼요');
+    toast('대화문/예문 그룹을 유지하며 월~토에 최대한 균등하게 배분했어요 (일요일은 그대로) — 저장을 눌러야 반영돼요');
   } else {
     const perDay = Math.ceil(n/6);
     for(let d=0; d<6; d++){
@@ -1776,10 +1776,10 @@ function autoDistributeMission(){
   renderMissionEditorModal();
 }
 function undoAutoDistribute(){
-  if(!window._missionEdit.prevScope) return;
-  window._missionEdit.scope = window._missionEdit.prevScope;
+  const {scope} = window._missionEdit;
+  for(let d=0; d<6; d++) scope[d] = new Set();
   window._missionEdit.prevScope = null;
-  toast('자동 배분을 취소했어요');
+  toast('월~토 배분을 모두 비웠어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 async function importCurrentScopeToDay(){
@@ -1841,7 +1841,7 @@ function renderMissionEditorModal(){
     ${distRangeSummaryHTML()}
     <div class="hstack" style="margin:6px 0 8px;">
       <button type="button" class="ghost small" style="flex:1;" onclick="autoDistributeMission()">🔀 자동 배분 (월~토 6등분)</button>
-      <button type="button" class="ghost small" style="flex:1;" ${window._missionEdit.prevScope ? '' : 'disabled'} onclick="undoAutoDistribute()">↩️ 자동 배분 취소</button>
+      <button type="button" class="ghost small" style="flex:1;" onclick="undoAutoDistribute()">↩️ 월~토 비우기</button>
     </div>
     <h2 class="section-title" style="margin-top:14px;">🔁 일요일 · 복습일 설정</h2>
     <div class="hint" style="background:var(--paper-2);padding:8px 10px;">
@@ -2380,11 +2380,23 @@ function renderQuestion(card){
       window._canvases.push(canvas);
     });
     wirePinyinInput();
-  } else {
-    const isExpr = deck==='expr';
+  } else if(deck==='expr'){
+    const tag = [card.book!=null?`${card.book}권 ${card.lesson}과`:null, card.group||null].filter(Boolean).join(' ');
     document.getElementById('reviewBody').innerHTML = `
       <div class="big-hanzi" style="font-size:26px;font-family:Noto Sans KR,sans-serif;">${esc(card.ko)}</div>
-      ${isExpr ? '<div class="sub">이 뜻을 병음 문장으로 써보세요</div>' : '<div class="sub">이 뜻의 병음을 써보세요</div>'}
+      ${tag ? `<div class="sub">${esc(tag)}</div>` : ''}
+      <div id="answerSlot"></div>
+    `;
+    document.getElementById('reviewFoot').innerHTML = `
+      <div class="hstack">
+        <button class="primary" style="flex:1;" onclick="revealCard()">정답 보기</button>
+        <button class="ghost" style="flex:1;" onclick="skipToReveal()">모르겠어요</button>
+      </div>
+    `;
+  } else {
+    document.getElementById('reviewBody').innerHTML = `
+      <div class="big-hanzi" style="font-size:26px;font-family:Noto Sans KR,sans-serif;">${esc(card.ko)}</div>
+      <div class="sub">이 뜻의 병음을 써보세요</div>
       ${pinyinInputBlock()}
     `;
     document.getElementById('reviewFoot').innerHTML = `
