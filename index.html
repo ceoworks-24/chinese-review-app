@@ -1126,16 +1126,6 @@ async function checkWeeklyMissionReset(){
 function dateStrOf(d){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-async function recordTodayCompletionIfNeeded(isComplete){
-  if(!isComplete) return null;
-  const today = dateStrOf(new Date());
-  const log = (await sGet('mission-completion-log')) || {};
-  if(!log[today]){
-    log[today] = true;
-    await sSet('mission-completion-log', log);
-  }
-  return log;
-}
 function computeStreak(log){
   if(!log) return 0;
   let streak = 0;
@@ -1291,20 +1281,38 @@ async function renderHome(){
   const clearedMissionSet = new Set(clearedMissionArr);
   const today = todayMissionIndex();
 
-  {
-    const decksForStreak = [['hsk',missionScopeHsk], ['vocab',missionScopeVocab], ['expr',missionScopeExpr]];
-    let hasAnyToday = false, todayComplete = true;
-    decksForStreak.forEach(([name,scope])=>{
-      const ids = scope[today] || [];
-      if(ids.length>0) hasAnyToday = true;
+  const mondayStr = getMondayDateStr(new Date());
+  function dateOfWeekIndex(i){
+    const d = new Date(mondayStr+'T00:00:00');
+    d.setDate(d.getDate()+i);
+    return dateStrOf(d);
+  }
+  let missionLog = (await sGet('mission-completion-log')) || {};
+  let logDirty = false;
+  function computeDayComplete(d){
+    const decks = [['hsk',missionScopeHsk], ['vocab',missionScopeVocab], ['expr',missionScopeExpr]];
+    let hasAny = false, complete = true;
+    decks.forEach(([name,scope])=>{
+      const ids = scope[d] || [];
+      if(ids.length>0) hasAny = true;
       const remain = ids.filter(id=>!clearedMissionSet.has(name+':'+id)).length;
-      if(remain>0) todayComplete = false;
+      if(remain>0) complete = false;
     });
-    const isComplete = hasAnyToday && todayComplete;
-    let missionLog = (await sGet('mission-completion-log')) || {};
-    if(isComplete){
-      missionLog = (await recordTodayCompletionIfNeeded(true)) || missionLog;
+    return hasAny && complete;
+  }
+  const weekStatusArr = [];
+  for(let d=0; d<7; d++){
+    const dateKey = dateOfWeekIndex(d);
+    if(missionLog[dateKey]){
+      weekStatusArr.push(true);
+    } else {
+      const isComplete = computeDayComplete(d);
+      if(isComplete){ missionLog[dateKey] = true; logDirty = true; }
+      weekStatusArr.push(isComplete);
     }
+  }
+  if(logDirty) await sSet('mission-completion-log', missionLog);
+  {
     const streak = computeStreak(missionLog);
     const streakEl = document.getElementById('streakDisplay');
     if(streakEl) streakEl.textContent = '🔥'+streak+'일 연속 성공 중';
@@ -1323,23 +1331,7 @@ async function renderHome(){
     const remain = ids.filter(id=>!clearedMissionSet.has(deckName+':'+id)).length;
     return {remain, total: ids.length};
   }
-  function weekStatus(){
-    const decks = [['hsk',missionScopeHsk], ['vocab',missionScopeVocab], ['expr',missionScopeExpr]];
-    const status = [];
-    for(let d=0; d<7; d++){
-      let hasAny = false, complete = true;
-      decks.forEach(([name,scope])=>{
-        const ids = scope[d] || [];
-        if(ids.length>0) hasAny = true;
-        const remain = ids.filter(id=>!clearedMissionSet.has(name+':'+id)).length;
-        if(remain>0) complete = false;
-      });
-      status.push(hasAny && complete);
-    }
-    return status;
-  }
-  function weeklyMissionCardHTML(){
-    const status = weekStatus();
+  function weeklyMissionCardHTML(status){
     const doneCount = status.filter(Boolean).length;
     return `
       <div class="card">
@@ -1349,7 +1341,7 @@ async function renderHome(){
         </div>
         <div class="hstack" style="justify-content:space-between;margin-top:8px;">
           ${MISSION_DAYS.map((label,i)=>`
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;${i===today && !status[i]?'cursor:pointer;':''}" ${i===today && !status[i]?'onclick="startTodayMission()"':''}>
               <span style="font-size:11px;color:${i===today?'var(--seal)':'var(--ink-soft)'};font-weight:${i===today?'700':'400'};">${label}</span>
               <div class="${i===today && !status[i]?'today-pulse':''}" style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
                 font-size:13px;background:${status[i]?'var(--jade)':'var(--paper-2)'};color:${status[i]?'#fff':'var(--ink-soft)'};
@@ -1359,13 +1351,14 @@ async function renderHome(){
             </div>
           `).join('')}
         </div>
+        ${status[today] ? '' : '<div class="sub" style="text-align:center;margin-top:8px;">오늘 원을 누르면 바로 시작할 수 있어요</div>'}
       </div>
     `;
   }
 
   el.innerHTML = `
     <h2 class="section-title">오늘의 복습</h2>
-    ${weeklyMissionCardHTML()}
+    ${weeklyMissionCardHTML(weekStatusArr)}
     ${homeDeckCard('hsk','한자','한자 쓰기 · 뜻 · 병음', general('hsk',hsk), starredInfo('hsk'), missionInfoFor('hsk',missionScopeHsk), `openReviewScope()`)}
     ${homeDeckCard('vocab','단어','뜻 · 병음', general('vocab',vocab), starredInfo('vocab'), missionInfoFor('vocab',missionScopeVocab), `startReview('vocab')`)}
     ${homeDeckCard('expr','표현','뜻 보고 병음 쓰기', general('expr',expr), starredInfo('expr'), missionInfoFor('expr',missionScopeExpr), `startReview('expr')`)}
@@ -1950,6 +1943,20 @@ async function saveMissionScope(){
   toast('미션이 저장되었어요');
   if(deckName==='hsk') renderHskTab(); else if(deckName==='vocab') renderVocabTab(); else renderExprTab();
 }
+async function startTodayMission(){
+  const today = todayMissionIndex();
+  const [scopeHsk, scopeVocab, scopeExpr, clearedArr] = await Promise.all([
+    getMissionScope('hsk'), getMissionScope('vocab'), getMissionScope('expr'), getClearedMission()
+  ]);
+  const clearedSet = new Set(clearedArr);
+  function remainFor(name, scope){
+    return (scope[today]||[]).filter(id=>!clearedSet.has(name+':'+id)).length;
+  }
+  if(remainFor('hsk', scopeHsk)>0) return startMissionReview('hsk');
+  if(remainFor('vocab', scopeVocab)>0) return startMissionReview('vocab');
+  if(remainFor('expr', scopeExpr)>0) return startMissionReview('expr');
+  toast('오늘 미션이 모두 완료됐어요!');
+}
 async function startMissionReview(deckName, dayIndex){
   const day = dayIndex!=null ? dayIndex : todayMissionIndex();
   const deckKey = deckName==='hsk' ? 'hsk-words' : (deckName==='vocab' ? 'textbook-vocab' : 'textbook-expr');
@@ -1973,23 +1980,44 @@ function startMissionReviewFromEditor(deckName, dayIndex){
   startMissionReview(deckName, dayIndex);
 }
 function openResetMissionConfirm(deckName){
+  const today = todayMissionIndex();
   const modal = document.getElementById('modalContent');
   modal.innerHTML = `
     <h3>${DECK_LABEL[deckName]} 미션 다시하기</h3>
-    <div class="hint" style="background:#FCE9E9;">'${DECK_LABEL[deckName]}'의 요일별 미션에서 '정답'으로 완료했던 것들이 모두 다시 미션 대상으로 돌아가요.\n요일별로 지정해둔 단어 구성(미션 설정)과 ⭐ 즐겨찾기, 일반/즐겨찾기 복습 진행 상황에는 전혀 영향 없어요.\n이 작업은 되돌릴 수 없어요.</div>
-    <div class="hstack" style="margin-top:6px;">
+    <div class="hint" style="background:#FCE9E9;">다시 하고 싶은 요일만 선택하세요. 선택한 요일에서 '정답'으로 완료했던 것만 다시 미션 대상으로 돌아가요.\n다른 요일 진행 상황, 요일별 단어 구성(미션 설정), ⭐ 즐겨찾기에는 영향 없어요.\n이 작업은 되돌릴 수 없어요.</div>
+    <label class="hstack" style="align-items:center;margin:8px 0;">
+      <input type="checkbox" id="resetAllDays">
+      <span><b>전체 요일</b></span>
+    </label>
+    <div class="hstack" style="flex-wrap:wrap;">
+      ${MISSION_DAYS.map((l,i)=>`
+        <label class="hstack" style="align-items:center;">
+          <input type="checkbox" class="reset-day-check" value="${i}" ${i===today?'checked':''}>
+          <span>${l}${i===today?' (오늘)':''}</span>
+        </label>
+      `).join('')}
+    </div>
+    <div class="hstack" style="margin-top:10px;">
       <button class="ghost" style="flex:1;" onclick="closeModal()">취소</button>
       <button class="primary" style="flex:1;background:var(--seal);" onclick="doResetMission('${deckName}')">다시하기</button>
     </div>
   `;
   document.getElementById('modalBg').classList.add('active');
   pushOverlayState();
+  document.getElementById('resetAllDays').addEventListener('change', e=>{
+    document.querySelectorAll('.reset-day-check').forEach(cb=>{ cb.checked = e.target.checked; });
+  });
 }
 async function doResetMission(deckName){
+  const checkedDays = [...document.querySelectorAll('.reset-day-check:checked')].map(cb=>Number(cb.value));
+  if(checkedDays.length===0){ toast('다시 할 요일을 선택해주세요'); return; }
+  const scopeObj = await getMissionScope(deckName);
+  const idsToReset = new Set();
+  checkedDays.forEach(d=>{ (scopeObj[d]||[]).forEach(id=>idsToReset.add(deckName+':'+id)); });
   const cleared = await getClearedMission();
-  await setClearedMission(cleared.filter(k=>!k.startsWith(deckName+':')));
+  await setClearedMission(cleared.filter(k=>!idsToReset.has(k)));
   closeModal();
-  toast(DECK_LABEL[deckName]+' 미션을 다시 시작해요');
+  toast(DECK_LABEL[deckName]+' 선택한 요일 미션을 다시 시작해요');
   TAB_RENDER[document.querySelector('.tab-btn.active').dataset.tab]();
 }
 
