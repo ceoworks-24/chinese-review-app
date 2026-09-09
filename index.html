@@ -1341,7 +1341,7 @@ async function renderHome(){
         </div>
         <div class="hstack" style="justify-content:space-between;margin-top:8px;">
           ${MISSION_DAYS.map((label,i)=>`
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;${i===today && !status[i]?'cursor:pointer;':''}" ${i===today && !status[i]?'onclick="startTodayMission()"':''}>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;${!status[i]?'cursor:pointer;':''}" ${!status[i]?`onclick="startDayMission(${i})"`:''}>
               <span style="font-size:11px;color:${i===today?'var(--seal)':'var(--ink-soft)'};font-weight:${i===today?'700':'400'};">${label}</span>
               <div class="${i===today && !status[i]?'today-pulse':''}" style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
                 font-size:13px;background:${status[i]?'var(--jade)':'var(--paper-2)'};color:${status[i]?'#fff':'var(--ink-soft)'};
@@ -1351,7 +1351,7 @@ async function renderHome(){
             </div>
           `).join('')}
         </div>
-        ${status[today] ? '' : '<div class="sub" style="text-align:center;margin-top:8px;">오늘 원을 누르면 바로 시작할 수 있어요</div>'}
+        ${status.every(Boolean) ? '' : '<div class="sub" style="text-align:center;margin-top:8px;">완료 안 한 요일의 원을 누르면 바로 시작할 수 있어요</div>'}
       </div>
     `;
   }
@@ -1943,19 +1943,18 @@ async function saveMissionScope(){
   toast('미션이 저장되었어요');
   if(deckName==='hsk') renderHskTab(); else if(deckName==='vocab') renderVocabTab(); else renderExprTab();
 }
-async function startTodayMission(){
-  const today = todayMissionIndex();
+async function startDayMission(dayIndex){
   const [scopeHsk, scopeVocab, scopeExpr, clearedArr] = await Promise.all([
     getMissionScope('hsk'), getMissionScope('vocab'), getMissionScope('expr'), getClearedMission()
   ]);
   const clearedSet = new Set(clearedArr);
   function remainFor(name, scope){
-    return (scope[today]||[]).filter(id=>!clearedSet.has(name+':'+id)).length;
+    return (scope[dayIndex]||[]).filter(id=>!clearedSet.has(name+':'+id)).length;
   }
-  if(remainFor('hsk', scopeHsk)>0) return startMissionReview('hsk');
-  if(remainFor('vocab', scopeVocab)>0) return startMissionReview('vocab');
-  if(remainFor('expr', scopeExpr)>0) return startMissionReview('expr');
-  toast('오늘 미션이 모두 완료됐어요!');
+  if(remainFor('hsk', scopeHsk)>0) return startMissionReview('hsk', dayIndex);
+  if(remainFor('vocab', scopeVocab)>0) return startMissionReview('vocab', dayIndex);
+  if(remainFor('expr', scopeExpr)>0) return startMissionReview('expr', dayIndex);
+  toast(MISSION_DAYS[dayIndex]+'요일 미션이 모두 완료됐어요!');
 }
 async function startMissionReview(deckName, dayIndex){
   const day = dayIndex!=null ? dayIndex : todayMissionIndex();
