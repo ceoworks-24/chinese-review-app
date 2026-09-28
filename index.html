@@ -13,7 +13,7 @@
 <link rel="icon" href="icon-192.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper:#FBF7EE;
@@ -32,7 +32,8 @@
   body{
     background:var(--paper);
     color:var(--ink);
-    font-family:'Noto Sans KR', -apple-system, sans-serif;
+    /* 병음(알파벳·성조)은 라틴 전용 글꼴(Noto Sans)로, 한글은 Noto Sans KR로 표시 — 한국어 글꼴의 1성(ā ē ī ō ū) 모양이 어긋나 보이던 문제 해결 */
+    font-family:'Noto Sans', 'Noto Sans KR', -apple-system, sans-serif;
     -webkit-font-smoothing:antialiased;
   }
   .hanzi{font-family:'Noto Serif SC', serif;}
