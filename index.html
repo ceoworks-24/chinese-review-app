@@ -1660,13 +1660,17 @@ async function checkWeeklyMissionReset(){
 function dateStrOf(d){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-function computeStreak(log){
+/* isRest(요일번호 0=월~6=일): 미션이 하나도 없는 '쉬는 날'은 연속 기록을 끊지도, 늘리지도 않아요 */
+function computeStreak(log, isRest){
   if(!log) return 0;
+  isRest = isRest || (()=>false);
+  const wd = dt=>(dt.getDay()+6)%7;
   let streak = 0;
   const d = new Date();
   if(!log[dateStrOf(d)]){ d.setDate(d.getDate()-1); }
-  while(log[dateStrOf(d)]){
-    streak++;
+  for(let guard=0; guard<3660; guard++){
+    if(log[dateStrOf(d)]){ streak++; }
+    else if(!isRest(wd(d))){ break; }
     d.setDate(d.getDate()-1);
   }
   return streak;
@@ -2002,6 +2006,10 @@ async function renderHome(){
     });
     return hasAny && complete;
   }
+  const restArr = [];
+  for(let d=0; d<7; d++){
+    restArr.push([missionScopeHsk, missionScopeVocab, missionScopeExpr].every(sc=>(sc[d]||[]).length===0));
+  }
   const weekStatusArr = [];
   for(let d=0; d<7; d++){
     const dateKey = dateOfWeekIndex(d);
@@ -2015,7 +2023,7 @@ async function renderHome(){
   }
   if(logDirty) await sSet('mission-completion-log', missionLog);
   {
-    const streak = computeStreak(missionLog);
+    const streak = computeStreak(missionLog, d=>restArr[d]);
     const streakEl = document.getElementById('streakDisplay');
     if(streakEl) streakEl.textContent = '🔥'+streak+'일 연속 성공 중';
   }
@@ -2034,15 +2042,20 @@ async function renderHome(){
     return {remain, total: ids.length};
   }
   function weeklyMissionCardHTML(status){
-    const doneCount = status.filter(Boolean).length;
+    const doneCount = status.filter((v,i)=>v && !restArr[i]).length;
+    const activeCount = restArr.filter(r=>!r).length;
     return `
       <div class="card">
         <div class="row-between">
           <h3>🔥 이번 주 일일 미션</h3>
-          <span class="sub">${doneCount}/7일 완료</span>
+          <span class="sub">${doneCount}/${activeCount}일 완료</span>
         </div>
         <div class="hstack" style="justify-content:space-between;margin-top:8px;">
-          ${MISSION_DAYS.map((label,i)=>`
+          ${MISSION_DAYS.map((label,i)=> restArr[i] ? `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <span style="font-size:11px;color:${i===today?'var(--seal)':'var(--ink-soft)'};font-weight:${i===today?'700':'400'};">${label}</span>
+              <div style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink-soft);border:1px dashed var(--line);">쉼</div>
+            </div>` : `
             <div style="display:flex;flex-direction:column;align-items:center;gap:4px;${!status[i]?'cursor:pointer;':''}" ${!status[i]?`onclick="startDayMission(${i})"`:''}>
               <span style="font-size:11px;color:${i===today?'var(--seal)':'var(--ink-soft)'};font-weight:${i===today?'700':'400'};">${label}</span>
               <div class="${i===today && !status[i]?'today-pulse':''}" style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
@@ -2053,7 +2066,7 @@ async function renderHome(){
             </div>
           `).join('')}
         </div>
-        ${status.every(Boolean) ? '' : '<div class="sub" style="text-align:center;margin-top:8px;">완료 안 한 요일의 원을 누르면 바로 시작할 수 있어요</div>'}
+        ${status.every((v,i)=>v||restArr[i]) ? '' : '<div class="sub" style="text-align:center;margin-top:8px;">완료 안 한 요일의 원을 누르면 바로 시작할 수 있어요</div>'}
       </div>
     `;
   }
@@ -2313,9 +2326,49 @@ async function openMissionEditor(deckName){
   for(let d=0; d<7; d++) scope[d] = new Set(scopeObj[d]||[]);
   const levels = deckName==='hsk' ? [...new Set(cards.map(c=>String(c.level)))].sort() : [];
   const books = deckName==='expr' ? [...new Set(cards.map(c=>c.book).filter(b=>b!=null))].sort((a,b)=>a-b) : [];
-  window._missionEdit = {deckName, cards, scope, levels, books, distRanges:[]};
+  const days = await getMissionDays(deckName);
+  window._missionEdit = {deckName, cards, scope, levels, books, distRanges:[], distDays:days.dist, reviewDay:days.review};
   window._missionDay = todayMissionIndex();
   renderMissionEditorModal();
+}
+/* 배분 요일·복습일 선택 (한자/단어/표현 각각 따로 기억) */
+async function getMissionDays(deckName){
+  const v = await sGet('mission-days-'+deckName);
+  if(v && Array.isArray(v.dist) && v.review!=null) return v;
+  return {dist:[0,1,2,3,4,5], review:6};
+}
+async function saveMissionDays(){
+  const {deckName, distDays, reviewDay} = window._missionEdit;
+  await sSet('mission-days-'+deckName, {dist:distDays.slice().sort((a,b)=>a-b), review:reviewDay});
+}
+function toggleDistDay(d){
+  const me = window._missionEdit;
+  if(d===me.reviewDay){ toast(MISSION_DAYS[d]+'요일은 복습일이라 배분 요일로 고를 수 없어요'); return; }
+  if(me.distDays.includes(d)) me.distDays = me.distDays.filter(x=>x!==d);
+  else me.distDays.push(d);
+  saveMissionDays();
+  renderMissionEditorModal();
+}
+function setReviewDay(d){
+  const me = window._missionEdit;
+  if(me.distDays.includes(d)){ toast(MISSION_DAYS[d]+'요일은 배분 요일로 체크돼 있어요 — 먼저 배분 요일에서 빼주세요'); return; }
+  me.reviewDay = d;
+  saveMissionDays();
+  renderMissionEditorModal();
+}
+function missionDayPickerHTML(){
+  const {distDays, reviewDay} = window._missionEdit;
+  const chip = (label, on, disabled, onclick)=>`<button type="button" class="ghost small" ${disabled?'disabled':''} onclick="${onclick}" style="min-width:36px;padding:5px 8px;${on?'background:var(--seal);color:#fff;border-color:var(--seal);':''}${disabled?'opacity:.35;':''}">${label}</button>`;
+  return `
+    <div class="field-label" style="margin-top:4px;">배분 요일 (여러 개 선택)</div>
+    <div class="hstack" style="flex-wrap:wrap;gap:4px;">
+      ${MISSION_DAYS.map((l,i)=>chip(l, distDays.includes(i), i===reviewDay, `toggleDistDay(${i})`)).join('')}
+    </div>
+    <div class="field-label" style="margin-top:8px;">복습일 (하루)</div>
+    <div class="hstack" style="flex-wrap:wrap;gap:4px;">
+      ${MISSION_DAYS.map((l,i)=>chip(l, i===reviewDay, distDays.includes(i), `setReviewDay(${i})`)).join('')}
+    </div>
+    <div class="sub" style="margin-top:4px;">배분 요일과 복습일은 겹칠 수 없어요 · 고른 요일은 기억돼요</div>`;
 }
 function computeDistPool(){
   const {deckName, cards, distRanges} = window._missionEdit;
@@ -2456,33 +2509,40 @@ function autoDistributeMission(){
   const snapshot = {};
   for(let d=0; d<7; d++) snapshot[d] = new Set(scope[d]);
   window._missionEdit.prevScope = snapshot;
+  const {reviewDay} = window._missionEdit;
+  const days = window._missionEdit.distDays.filter(d=>d!==reviewDay).sort((a,b)=>a-b);
+  if(days.length===0){ toast('배분 요일을 하나 이상 골라주세요'); return; }
+  // 복습일을 뺀 나머지 요일은 모두 비우고, 고른 요일에만 나눠 담기
+  for(let d=0; d<7; d++){ if(d!==reviewDay) scope[d] = new Set(); }
+  const dayNames = days.map(d=>MISSION_DAYS[d]).join('·');
   if(deckName==='expr' && pool.some(c=>c.group)){
-    const chunks = groupAwareChunks(pool, 6);
-    for(let d=0; d<6; d++){ scope[d] = new Set(chunks[d].map(c=>c.id)); }
-    toast('대화문/예문 그룹을 유지하며 월~토에 최대한 균등하게 배분했어요 (일요일은 그대로) — 저장을 눌러야 반영돼요');
+    const chunks = groupAwareChunks(pool, days.length);
+    days.forEach((d,i)=>{ scope[d] = new Set(chunks[i].map(c=>c.id)); });
+    toast('대화문/예문 그룹을 유지하며 '+dayNames+'에 배분했어요 (복습일은 그대로) — 저장을 눌러야 반영돼요');
   } else {
-    const perDay = Math.ceil(n/6);
-    for(let d=0; d<6; d++){
-      const chunk = pool.slice(d*perDay, (d+1)*perDay);
+    const perDay = Math.ceil(n/days.length);
+    days.forEach((d,i)=>{
+      const chunk = pool.slice(i*perDay, (i+1)*perDay);
       scope[d] = new Set(chunk.map(c=>c.id));
-    }
-    toast('월~토 순서대로 6등분했어요 (일요일은 그대로) — 저장을 눌러야 반영돼요');
+    });
+    toast(dayNames+'에 순서대로 '+days.length+'등분했어요 (복습일은 그대로) — 저장을 눌러야 반영돼요');
   }
   renderMissionEditorModal();
 }
 function undoAutoDistribute(){
-  const {scope} = window._missionEdit;
-  for(let d=0; d<6; d++) scope[d] = new Set();
+  const {scope, reviewDay} = window._missionEdit;
+  for(let d=0; d<7; d++){ if(d!==reviewDay) scope[d] = new Set(); }
   window._missionEdit.prevScope = null;
-  toast('월~토 배분을 모두 비웠어요 — 저장을 눌러야 반영돼요');
+  toast('복습일을 뺀 모든 요일을 비웠어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 async function importCurrentScopeToDay(){
   const raw = await sGet('hsk-review-scope');
   if(!raw || !Array.isArray(raw) || raw.length===0){ toast('저장된 복습 범위가 없어요 — "전체" 탭에서 먼저 범위를 체크해두세요'); return; }
   const {scope} = window._missionEdit;
-  raw.forEach(id=>scope[6].add(id));
-  toast('현재 복습 범위(이번 주 새 단어)를 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
+  const rd = window._missionEdit.reviewDay;
+  raw.forEach(id=>scope[rd].add(id));
+  toast('현재 복습 범위(이번 주 새 단어)를 '+MISSION_DAYS[rd]+'요일(복습일)에 추가했어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 async function importStarredToDay(){
@@ -2490,8 +2550,9 @@ async function importStarredToDay(){
   const ids = starred.filter(k=>k.startsWith('hsk:')).map(k=>k.slice(4));
   if(ids.length===0){ toast('즐겨찾기한 한자가 없어요'); return; }
   const {scope} = window._missionEdit;
-  ids.forEach(id=>scope[6].add(id));
-  toast('즐겨찾기 한자를 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
+  const rd = window._missionEdit.reviewDay;
+  ids.forEach(id=>scope[rd].add(id));
+  toast('즐겨찾기 한자를 '+MISSION_DAYS[rd]+'요일(복습일)에 추가했어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 function addRangeToSunday(){
@@ -2508,8 +2569,9 @@ function addRangeToSunday(){
     return key>=from && key<=to;
   });
   if(matched.length===0){ toast('해당 범위에 표현이 없어요'); return; }
-  matched.forEach(c=>scope[6].add(c.id));
-  toast(fb+'권'+fl+'과 ~ '+tb+'권'+tl+'과를 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
+  const rd = window._missionEdit.reviewDay;
+  matched.forEach(c=>scope[rd].add(c.id));
+  toast(fb+'권'+fl+'과 ~ '+tb+'권'+tl+'과를 '+MISSION_DAYS[rd]+'요일(복습일)에 추가했어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 async function importStarredExprToDay(){
@@ -2517,28 +2579,34 @@ async function importStarredExprToDay(){
   const ids = starred.filter(k=>k.startsWith('expr:')).map(k=>k.slice(5));
   if(ids.length===0){ toast('즐겨찾기한 표현이 없어요'); return; }
   const {scope} = window._missionEdit;
-  ids.forEach(id=>scope[6].add(id));
-  toast('즐겨찾기 표현을 일요일에 추가했어요 — 저장을 눌러야 반영돼요');
+  const rd = window._missionEdit.reviewDay;
+  ids.forEach(id=>scope[rd].add(id));
+  toast('즐겨찾기 표현을 '+MISSION_DAYS[rd]+'요일(복습일)에 추가했어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 function clearSundayScope(){
-  window._missionEdit.scope[6] = new Set();
-  toast('일요일 설정을 비웠어요 — 저장을 눌러야 반영돼요');
+  const rd = window._missionEdit.reviewDay;
+  window._missionEdit.scope[rd] = new Set();
+  toast(MISSION_DAYS[rd]+'요일(복습일) 설정을 비웠어요 — 저장을 눌러야 반영돼요');
   renderMissionEditorModal();
 }
 function renderMissionEditorModal(){
-  const {deckName, scope} = window._missionEdit;
+  const {deckName, scope, reviewDay} = window._missionEdit;
   const day = window._missionDay;
+  const RD = MISSION_DAYS[reviewDay];
+  const distLabel = window._missionEdit.distDays.slice().sort((a,b)=>a-b).map(d=>MISSION_DAYS[d]).join('·') || '없음';
   const modal = document.getElementById('modalContent');
   modal.innerHTML = `
     <h3>${DECK_LABEL[deckName]} 요일별 미션 설정</h3>
-    <h2 class="section-title" style="margin-top:0;">📚 월~토 · 신규 학습 배분</h2>
+    <h2 class="section-title" style="margin-top:0;">📅 요일 선택</h2>
+    ${missionDayPickerHTML()}
+    <h2 class="section-title" style="margin-top:14px;">📚 ${distLabel} · 신규 학습 배분</h2>
     ${distRangeSummaryHTML()}
     <div class="hstack" style="margin:6px 0 8px;">
-      <button type="button" class="ghost small" style="flex:1;" onclick="autoDistributeMission()">🔀 자동 배분 (월~토 6등분)</button>
-      <button type="button" class="ghost small" style="flex:1;" onclick="undoAutoDistribute()">↩️ 월~토 비우기</button>
+      <button type="button" class="ghost small" style="flex:1;" onclick="autoDistributeMission()">🔀 자동 배분 (${window._missionEdit.distDays.length}등분)</button>
+      <button type="button" class="ghost small" style="flex:1;" onclick="undoAutoDistribute()">↩️ 배분 요일 비우기</button>
     </div>
-    <h2 class="section-title" style="margin-top:14px;">🔁 일요일 · 복습일 설정</h2>
+    <h2 class="section-title" style="margin-top:14px;">🔁 ${RD}요일 · 복습일 설정</h2>
     <div class="hint" style="background:var(--paper-2);padding:8px 10px;">
       ${deckName==='hsk' ? `
         <div class="hstack">
@@ -2559,9 +2627,9 @@ function renderMissionEditorModal(){
           <button type="button" class="ghost small" style="flex:1;" onclick="importStarredExprToDay()">⭐ 즐겨찾기 가져오기</button>
         </div>
       ` : ''}
-      ${deckName==='vocab' ? `<div class="sub">아래 요일 탭에서 일요일을 선택하고, 체크박스로 직접 골라 담으세요</div>` : ''}
-      <div class="sub" style="margin-top:4px;">위 버튼들은 지금 보고 있는 요일과 상관없이 항상 일요일에 추가돼요</div>
-      <button type="button" class="ghost small" style="width:100%;margin-top:6px;color:var(--seal);" onclick="clearSundayScope()">일요일 비우기 (잘못 추가했을 때)</button>
+      ${deckName==='vocab' ? `<div class="sub">아래 요일 탭에서 ${RD}요일을 선택하고, 체크박스로 직접 골라 담으세요</div>` : ''}
+      <div class="sub" style="margin-top:4px;">위 버튼들은 지금 보고 있는 요일과 상관없이 항상 복습일(${RD}요일)에 추가돼요</div>
+      <button type="button" class="ghost small" style="width:100%;margin-top:6px;color:var(--seal);" onclick="clearSundayScope()">${RD}요일 비우기 (잘못 추가했을 때)</button>
     </div>
     <div class="sub" style="margin-top:8px;">아래에서 요일별로 직접 확인·수정할 수 있어요</div>
     <div class="hstack" id="missionDayTabs" style="flex-wrap:wrap;">
@@ -2632,9 +2700,10 @@ function updateMissionAllCheckbox(){
 }
 async function saveMissionScope(){
   const {deckName, scope} = window._missionEdit;
-  if(scope[6].size===0){
-    toast('일요일 미션이 비어있어요 — 최소 1개 이상 설정해야 저장할 수 있어요');
-    window._missionDay = 6;
+  const rd = window._missionEdit.reviewDay;
+  if(scope[rd].size===0){
+    toast(MISSION_DAYS[rd]+'요일(복습일) 미션이 비어있어요 — 최소 1개 이상 설정해야 저장할 수 있어요');
+    window._missionDay = rd;
     renderMissionEditorModal();
     return;
   }
