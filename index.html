@@ -1678,7 +1678,7 @@ function computeStreak(log, isRest){
 
 function computeQueue(deckName, cards, idFilter, clearedSet){
   let pool = cards;
-  if(deckName==='hsk' && idFilter){
+  if((deckName==='hsk' || deckName==='expr') && idFilter){
     const allowed = new Set(idFilter);
     pool = cards.filter(c=>allowed.has(c.id));
   }
@@ -2076,7 +2076,7 @@ async function renderHome(){
     ${weeklyMissionCardHTML(weekStatusArr)}
     ${homeDeckCard('hsk','한자','한자 쓰기 · 뜻 · 병음', general('hsk',hsk), starredInfo('hsk'), missionInfoFor('hsk',missionScopeHsk), `openReviewScope()`)}
     ${homeDeckCard('vocab','단어','뜻 · 병음', general('vocab',vocab), starredInfo('vocab'), missionInfoFor('vocab',missionScopeVocab), `startReview('vocab')`)}
-    ${homeDeckCard('expr','표현','뜻 보고 병음 쓰기', general('expr',expr), starredInfo('expr'), missionInfoFor('expr',missionScopeExpr), `startReview('expr')`)}
+    ${homeDeckCard('expr','표현','뜻 보고 병음 쓰기', general('expr',expr), starredInfo('expr'), missionInfoFor('expr',missionScopeExpr), `openExprScope()`)}
   `;
 }
 
@@ -3048,6 +3048,126 @@ async function confirmScopeAndStart(){
   startReview('hsk', ids);
 }
 
+/* ---------------- 표현 [전체] 복습 범위 선택 (권/과 구간 + 과·그룹 체크박스) ---------------- */
+function exprLessonKey(c){ return (Number(c.book)||0)*1000+(Number(c.lesson)||0); }
+function exprGroupKey(c){ return exprLessonKey(c)+'|'+(c.group||''); }
+async function openExprScope(){
+  const cards = await loadDeck('textbook-expr');
+  if(cards.length===0){ toast('등록된 표현이 없어요'); return; }
+  const saved = await sGet('expr-review-scope');
+  const allIds = new Set(cards.map(c=>c.id));
+  let sel = Array.isArray(saved) ? saved.filter(id=>allIds.has(id)) : [];
+  if(sel.length===0) sel = cards.map(c=>c.id);
+  window._exprScope = {cards, selected:new Set(sel), open:new Set()};
+  const lessons = [];
+  cards.forEach(c=>{ const k=exprLessonKey(c); if(!lessons.includes(k)) lessons.push(k); });
+  lessons.sort((a,b)=>a-b);
+  window._exprScope.lessons = lessons;
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <h3>표현 복습 범위 선택</h3>
+    <div class="hstack" style="flex-wrap:wrap;align-items:center;margin-bottom:10px;background:var(--paper-2);padding:8px 10px;border-radius:8px;gap:4px;">
+      <input type="number" id="esFromBook" placeholder="권" inputmode="numeric" style="width:48px;">
+      <input type="number" id="esFromLesson" placeholder="과" inputmode="numeric" style="width:48px;">
+      <span class="sub">~</span>
+      <input type="number" id="esToBook" placeholder="권" inputmode="numeric" style="width:48px;">
+      <input type="number" id="esToLesson" placeholder="과" inputmode="numeric" style="width:48px;">
+      <button type="button" class="ghost small" onclick="addExprScopeRange()">구간 선택 추가</button>
+    </div>
+    <label class="hstack" style="align-items:center;margin-bottom:6px;">
+      <input type="checkbox" id="esAll"><span><b>전체</b></span>
+    </label>
+    <div id="exprScopeList" style="max-height:320px;overflow-y:auto;border-top:1px solid var(--line);padding-top:6px;"></div>
+    <div class="sub" id="exprScopeCount" style="text-align:center;margin-top:10px;color:var(--ink-soft);"></div>
+    <div class="hstack" style="margin-top:10px;">
+      <button class="primary" style="flex:1;" onclick="confirmExprScopeAndStart()">복습 시작</button>
+      <button class="ghost" style="flex:1;" onclick="closeModal()">닫기</button>
+    </div>
+  `;
+  document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
+  document.getElementById('esAll').addEventListener('change', e=>{
+    const st = window._exprScope;
+    if(e.target.checked) st.cards.forEach(c=>st.selected.add(c.id)); else st.selected.clear();
+    renderExprScopeList();
+  });
+  renderExprScopeList();
+}
+function exprIdsOfLesson(k){ return window._exprScope.cards.filter(c=>exprLessonKey(c)===k).map(c=>c.id); }
+function exprIdsOfGroup(gk){ return window._exprScope.cards.filter(c=>exprGroupKey(c)===gk).map(c=>c.id); }
+function renderExprScopeList(){
+  const st = window._exprScope;
+  const state = ids=>{ const n=ids.filter(id=>st.selected.has(id)).length; return n===0?'none':(n===ids.length?'all':'some'); };
+  const html = st.lessons.map(k=>{
+    const ids = exprIdsOfLesson(k);
+    const s1 = state(ids);
+    const book = Math.floor(k/1000), lesson = k%1000;
+    const groups = [];
+    st.cards.filter(c=>exprLessonKey(c)===k).forEach(c=>{ const g=exprGroupKey(c); if(!groups.includes(g)) groups.push(g); });
+    const isOpen = st.open.has(k);
+    return `
+      <div style="border-bottom:1px solid #F0EBDD;padding:6px 0;">
+        <div class="hstack" style="align-items:center;">
+          <input type="checkbox" class="es-lesson" data-k="${k}" ${s1==='all'?'checked':''} data-some="${s1==='some'?1:0}">
+          <span style="flex:1;font-weight:700;">${book}권 ${lesson}과 <span class="sub" style="font-weight:400;">(${ids.filter(id=>st.selected.has(id)).length}/${ids.length})</span></span>
+          <button type="button" class="ghost small" style="padding:2px 8px;" onclick="toggleExprLessonOpen(${k})">${isOpen?'접기 ▲':'그룹 ▼'}</button>
+        </div>
+        ${isOpen ? `<div style="padding:4px 0 2px 26px;display:flex;flex-wrap:wrap;gap:6px 12px;">
+          ${groups.map(gk=>{
+            const gids = exprIdsOfGroup(gk); const s2 = state(gids);
+            const name = gk.split('|')[1] || '(그룹 없음)';
+            return `<label class="hstack" style="align-items:center;gap:4px;font-size:13px;">
+              <input type="checkbox" class="es-group" data-g="${esc(gk)}" ${s2==='all'?'checked':''} data-some="${s2==='some'?1:0}">${esc(name)} <span class="sub">${gids.length}</span></label>`;
+          }).join('')}
+        </div>` : ''}
+      </div>`;
+  }).join('');
+  document.getElementById('exprScopeList').innerHTML = html;
+  document.querySelectorAll('#exprScopeList input[data-some="1"]').forEach(cb=>{ cb.indeterminate = true; });
+  document.querySelectorAll('.es-lesson').forEach(cb=>cb.addEventListener('change', ()=>{
+    const ids = exprIdsOfLesson(Number(cb.dataset.k));
+    ids.forEach(id=> cb.checked ? st.selected.add(id) : st.selected.delete(id));
+    renderExprScopeList();
+  }));
+  document.querySelectorAll('.es-group').forEach(cb=>cb.addEventListener('change', ()=>{
+    const ids = exprIdsOfGroup(cb.dataset.g);
+    ids.forEach(id=> cb.checked ? st.selected.add(id) : st.selected.delete(id));
+    renderExprScopeList();
+  }));
+  const all = document.getElementById('esAll');
+  all.checked = st.selected.size===st.cards.length;
+  all.indeterminate = st.selected.size>0 && st.selected.size<st.cards.length;
+  document.getElementById('exprScopeCount').textContent = st.selected.size+' / '+st.cards.length+'개 선택됨';
+}
+function toggleExprLessonOpen(k){
+  const st = window._exprScope;
+  if(st.open.has(k)) st.open.delete(k); else st.open.add(k);
+  renderExprScopeList();
+}
+function addExprScopeRange(){
+  const fb = Number(document.getElementById('esFromBook').value);
+  const fl = document.getElementById('esFromLesson').value;
+  const tb = Number(document.getElementById('esToBook').value);
+  const tl = document.getElementById('esToLesson').value;
+  if(!fb || fl==='' || !tb || tl===''){ toast('권/과를 모두 입력해주세요'); return; }
+  const from = fb*1000+Number(fl), to = tb*1000+Number(tl);
+  if(from>to){ toast('시작이 끝보다 늦어요'); return; }
+  const st = window._exprScope;
+  const matched = st.cards.filter(c=>{ const k=exprLessonKey(c); return k>=from && k<=to; });
+  if(matched.length===0){ toast('해당 범위에 표현이 없어요'); return; }
+  matched.forEach(c=>st.selected.add(c.id));
+  ['esFromBook','esFromLesson','esToBook','esToLesson'].forEach(id=>document.getElementById(id).value='');
+  renderExprScopeList();
+  toast(fb+'권 '+fl+'과 ~ '+tb+'권 '+tl+'과 ('+matched.length+'개) 선택했어요');
+}
+async function confirmExprScopeAndStart(){
+  const ids = Array.from(window._exprScope.selected);
+  if(ids.length===0){ toast('최소 한 문장은 선택해주세요'); return; }
+  await sSet('expr-review-scope', ids);
+  closeModal();
+  startReview('expr', ids);
+}
+
 /* ---------------- REVIEW SESSION ---------------- */
 let review = null;
 
@@ -3069,11 +3189,13 @@ async function startReview(deckName, ids){
   let idFilter = null;
   if(deckName==='hsk'){
     idFilter = ids || await getSavedHskScope(cards);
+  } else if(deckName==='expr' && ids){
+    idFilter = ids;
   }
   const cleared = new Set(await getCleared());
   let queue = computeQueue(deckName, cards, idFilter, cleared);
   if(queue.length===0){ toast('학습 완료! "다시하기"를 누르면 처음부터 다시 볼 수 있어요'); return; }
-  queue = shuffle(queue);
+  queue = deckName==='expr' ? orderExprByGroup(queue, cards) : shuffle(queue);
   const starred = new Set(await getStarredKeys());
   review = {deck:deckName, queue, index:0, stage:'question', starred, mode:'general'};
   document.getElementById('reviewOverlay').classList.add('active');
