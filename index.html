@@ -1968,118 +1968,10 @@ function homeDeckCard(deckName, title, sub, general, starred, mission, generalSt
     <div class="hstack home-subtabs" style="margin-top:10px;">
       <button class="subtab-btn ${active==='general'?'active':''}" onclick="setHomeSubTab('${deckName}','general')">전체</button>
       <button class="subtab-btn ${active==='starred'?'active':''}" onclick="setHomeSubTab('${deckName}','starred')">⭐ 즐겨찾기</button>
-      <button class="subtab-btn ${active==='mission'?'active':''}" onclick="setHomeSubTab('${deckName}','mission')">📅 일일 미션</button>
     </div>
     <div class="hstack" style="margin-top:8px;flex-wrap:wrap;row-gap:8px;">${body}</div>
   </div>`;
 }
-async function renderHome(){
-  const el = document.getElementById('view-home');
-  el.innerHTML = '<div class="empty">불러오는 중…</div>';
-  await checkWeeklyMissionReset();
-  const [hsk, vocab, expr, rawScope, cleared, starredArr, missionScopeHsk, missionScopeVocab, missionScopeExpr, clearedMissionArr, clearedStarredArr] = await Promise.all([
-    loadDeck('hsk-words'), loadDeck('textbook-vocab'), loadDeck('textbook-expr'),
-    sGet('hsk-review-scope'), getCleared(), getStarredKeys(),
-    getMissionScope('hsk'), getMissionScope('vocab'), getMissionScope('expr'), getClearedMission(), getClearedStarred()
-  ]);
-  const clearedSet = new Set(cleared);
-  const clearedStarredSet = new Set(clearedStarredArr);
-  const clearedMissionSet = new Set(clearedMissionArr);
-  const today = todayMissionIndex();
-
-  const mondayStr = getMondayDateStr(new Date());
-  function dateOfWeekIndex(i){
-    const d = new Date(mondayStr+'T00:00:00');
-    d.setDate(d.getDate()+i);
-    return dateStrOf(d);
-  }
-  let missionLog = (await sGet('mission-completion-log')) || {};
-  let logDirty = false;
-  function computeDayComplete(d){
-    const decks = [['hsk',missionScopeHsk], ['vocab',missionScopeVocab], ['expr',missionScopeExpr]];
-    let hasAny = false, complete = true;
-    decks.forEach(([name,scope])=>{
-      const ids = scope[d] || [];
-      if(ids.length>0) hasAny = true;
-      const remain = ids.filter(id=>!clearedMissionSet.has(name+':'+id)).length;
-      if(remain>0) complete = false;
-    });
-    return hasAny && complete;
-  }
-  const restArr = [];
-  for(let d=0; d<7; d++){
-    restArr.push([missionScopeHsk, missionScopeVocab, missionScopeExpr].every(sc=>(sc[d]||[]).length===0));
-  }
-  const weekStatusArr = [];
-  for(let d=0; d<7; d++){
-    const dateKey = dateOfWeekIndex(d);
-    if(missionLog[dateKey]){
-      weekStatusArr.push(true);
-    } else {
-      const isComplete = computeDayComplete(d);
-      if(isComplete){ missionLog[dateKey] = true; logDirty = true; }
-      weekStatusArr.push(isComplete);
-    }
-  }
-  if(logDirty) await sSet('mission-completion-log', missionLog);
-  {
-    const streak = computeStreak(missionLog, d=>restArr[d]);
-    const streakEl = document.getElementById('streakDisplay');
-    if(streakEl) streakEl.textContent = '🔥'+streak+'일 연속 성공 중';
-  }
-
-  function general(deckName, cards){
-    return {remain: cards.filter(c=>!clearedSet.has(deckName+':'+c.id)).length, total: cards.length};
-  }
-  function starredInfo(deckName){
-    const total = starredArr.filter(k=>k.startsWith(deckName+':')).length;
-    const remain = starredArr.filter(k=>k.startsWith(deckName+':') && !clearedStarredSet.has(k)).length;
-    return {remain, total};
-  }
-  function missionInfoFor(deckName, scopeObj){
-    const ids = scopeObj[today] || [];
-    const remain = ids.filter(id=>!clearedMissionSet.has(deckName+':'+id)).length;
-    return {remain, total: ids.length};
-  }
-  function weeklyMissionCardHTML(status){
-    const doneCount = status.filter((v,i)=>v && !restArr[i]).length;
-    const activeCount = restArr.filter(r=>!r).length;
-    return `
-      <div class="card">
-        <div class="row-between">
-          <h3>🔥 이번 주 일일 미션</h3>
-          <span class="sub">${doneCount}/${activeCount}일 완료</span>
-        </div>
-        <div class="hstack" style="justify-content:space-between;margin-top:8px;">
-          ${MISSION_DAYS.map((label,i)=> restArr[i] ? `
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-              <span style="font-size:11px;color:${i===today?'var(--seal)':'var(--ink-soft)'};font-weight:${i===today?'700':'400'};">${label}</span>
-              <div style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink-soft);border:1px dashed var(--line);">쉼</div>
-            </div>` : `
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;${!status[i]?'cursor:pointer;':''}" ${!status[i]?`onclick="startDayMission(${i})"`:''}>
-              <span style="font-size:11px;color:${i===today?'var(--seal)':'var(--ink-soft)'};font-weight:${i===today?'700':'400'};">${label}</span>
-              <div class="${i===today && !status[i]?'today-pulse':''}" style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-                font-size:13px;background:${status[i]?'var(--jade)':'var(--paper-2)'};color:${status[i]?'#fff':'var(--ink-soft)'};
-                border:${i===today && !status[i]?'2px solid var(--seal)':'1px solid var(--line)'};">
-                ${status[i]?'✓':''}
-              </div>
-            </div>
-          `).join('')}
-        </div>
-        ${status.every((v,i)=>v||restArr[i]) ? '' : '<div class="sub" style="text-align:center;margin-top:8px;">완료 안 한 요일의 원을 누르면 바로 시작할 수 있어요</div>'}
-      </div>
-    `;
-  }
-
-  el.innerHTML = `
-    <h2 class="section-title">오늘의 복습</h2>
-    ${weeklyMissionCardHTML(weekStatusArr)}
-    ${homeDeckCard('hsk','한자','한자 쓰기 · 뜻 · 병음', general('hsk',hsk), starredInfo('hsk'), missionInfoFor('hsk',missionScopeHsk), `openReviewScope()`)}
-    ${homeDeckCard('vocab','단어','뜻 · 병음', general('vocab',vocab), starredInfo('vocab'), missionInfoFor('vocab',missionScopeVocab), `startReview('vocab')`)}
-    ${homeDeckCard('expr','표현','뜻 보고 병음 쓰기', general('expr',expr), starredInfo('expr'), missionInfoFor('expr',missionScopeExpr), `openExprScope()`)}
-  `;
-}
-
 /* ---------------- HSK TAB ---------------- */
 let hskLevelFilter = 'all';
 async function renderHskTab(){
@@ -2862,6 +2754,7 @@ function openImport(deck){
       <input type="checkbox" id="importStar">
       <span>⭐ 추가하는 단어를 즐겨찾기에도 등록</span>
     </label>
+    ${(deck==='vocab'||deck==='expr') ? importReqSelectHTML() : ''}
     <div class="hint">${cfg.hint}</div>
     <div class="hstack" style="margin-top:6px;">
       <button class="ghost" onclick="closeModal()" style="flex:1;">취소</button>
@@ -2874,54 +2767,6 @@ function openImport(deck){
 function closeModal(){
   document.getElementById('modalBg').classList.remove('active');
   consumeOverlayState();
-}
-
-async function submitImport(deck){
-  const text = document.getElementById('importText').value.trim();
-  if(!text){ toast('내용을 입력해주세요'); return; }
-  const wantStar = document.getElementById('importStar').checked;
-  const level = deck==='hsk' ? (document.getElementById('importLevel').value || '2') : null;
-  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
-  const deckKey = deck==='hsk' ? 'hsk-words' : (deck==='vocab' ? 'textbook-vocab' : 'textbook-expr');
-  const existing = await loadDeck(deckKey);
-  const newItems = [];
-  lines.forEach(line=>{
-    let parts;
-    if(line.includes('|')) parts = line.split('|').map(s=>s.trim());
-    else if(line.includes('\t')) parts = line.split('\t').map(s=>s.trim());
-    else parts = line.split(/\s{2,}/).map(s=>s.trim());
-    if(deck==='hsk'){
-      if(parts.length<3) return;
-      const [han,py,en,ko] = [parts[0], parts[1], parts[2]||'', parts[3]||parts[2]||''];
-      const item = {id:uid('hsk'), no: existing.length+newItems.length+1, han:han.trim(), py:py.trim(), en:en.trim(), ko:ko.trim(), level};
-      existing.push(item); newItems.push(item);
-    } else if(deck==='expr'){
-      if(parts.length<2) return;
-      const [ko,py,book,lesson,group] = parts;
-      const item = {
-        id:uid(deck), py:(py||'').trim(), ko:(ko||'').trim(),
-        book: book ? Number(book) : null,
-        lesson: lesson ? Number(lesson) : null,
-        group: group ? group.trim() : null
-      };
-      existing.push(item); newItems.push(item);
-    } else {
-      if(parts.length<2) return;
-      const [py,ko] = [parts[0], parts[1]];
-      const item = {id:uid(deck), py:py.trim(), ko:ko.trim()};
-      existing.push(item); newItems.push(item);
-    }
-  });
-  if(newItems.length===0){ toast('인식된 줄이 없어요. 형식을 확인해주세요'); return; }
-  await saveDeck(deckKey, existing);
-  if(wantStar){
-    const starred = await getStarredKeys();
-    newItems.forEach(item=>starred.push(deck+':'+item.id));
-    await setStarredKeys(starred);
-  }
-  closeModal();
-  toast(newItems.length+'개 추가되었어요'+(wantStar?' (즐겨찾기 등록됨)':''));
-  if(deck==='hsk') renderHskTab(); else if(deck==='vocab') renderVocabTab(); else renderExprTab();
 }
 
 /* ---------------- REVIEW SCOPE PICKER (HSK 급수 체크박스) ---------------- */
@@ -3044,6 +2889,7 @@ async function confirmScopeAndStart(){
   const ids = Array.from(window._scopeSelected);
   if(ids.length===0){ toast('최소 한 단어는 선택해주세요'); return; }
   await sSet('hsk-review-scope', ids);
+  await sSet('hsk-range-set', todayStr());
   closeModal();
   startReview('hsk', ids);
 }
@@ -3611,12 +3457,16 @@ async function rateCard(rating){
       const cleared = await getClearedMission();
       if(!cleared.includes(card._key)) cleared.push(card._key);
       await setClearedMission(cleared);
+    } else if(review.mode==='today' || review.mode==='revday'){
+      await srsRate(card._deck||review.deck, card.id, true);
     } else {
       const cleared = await getCleared();
       if(!cleared.includes(card._key)) cleared.push(card._key);
       await setCleared(cleared);
+      if(review.deck==='hsk') await srsHskNew(card);
     }
   } else {
+    if(review.mode==='today' || review.mode==='revday') await srsRate(card._deck||review.deck, card.id, false);
     review.queue.push(card);
   }
   review.index++;
@@ -3625,10 +3475,755 @@ async function rateCard(rating){
   renderReviewStep();
 }
 
+/* =====================================================================
+   새 학습 엔진 (2026-10 개편)
+   - 카드마다 '다음에 나올 날짜'를 관리하는 간격 반복 (틀리면 내일, 맞히면 3일 → 7일 → 14일(단어는 30일) 후)
+   - 이번 주 수업 분량·지난주 놓친 분량은 '필수 암기'(서로 다른 날 2번 맞혀야 완료, 완료 전까지 매일 나옴)
+   - 일일 미션은 요일별 고정 배분이 아니라 매일 자동 계산되는 '오늘 할 것'
+   - 홈 화면의 학습 비서가 현황·위험·할 일을 알려줌
+   ===================================================================== */
+const DECKS3 = ['hsk','vocab','expr'];
+const DECK_KEY = {hsk:'hsk-words', vocab:'textbook-vocab', expr:'textbook-expr'};
+const DECK_NAME_KO = {hsk:'한자', vocab:'단어', expr:'표현'};
+const DOW_KO = ['일','월','화','수','목','금','토'];
+const SRS_INT = [1,3,7,14,30];
+const SRS_MAXIDX = {hsk:3, expr:3, vocab:4};   // 한자·표현 최대 14일, 단어 최대 30일
+
+/* ---- 이번 주(10/8 수업) 분량 데이터 ---- */
+const LESSON_THIS = '2026-10-08';   // 오늘 수업일 (이번 주 신규의 기준 주기)
+const LESSON_PREV = '2026-10-01';   // 지난주 수업일 (놓친 표현의 주기)
+const EXPR_TW_RAW = `문은 왜 열려 있어요?\tMén zěnme kāizhe?\t3\t5\t문형연습-1
+당신은 보고 계세요, 제가 쓸게요.\tNǐ kànzhe, wǒ lái xiě.\t3\t5\t문형연습-1
+당신은 왜 서 있어요? 앉으세요.\tNǐ zěnme zhànzhe, zuò ba.\t3\t5\t문형연습-1
+그는 침대에 누워서 음악을 들어요.\tTā zài chuáng shang tǎngzhe tīng yīnyuè.\t3\t5\t문형연습-1
+엄마는 앉아서 책을 봐요.\tMāma zuòzhe kàn shū.\t3\t5\t문형연습-1
+저는 태극권을 하고 있어요.\tWǒ zhèngzài dǎ tàijíquán ne.\t3\t5\t문형연습-2
+선생님은 중국어를 가르치고 있어요.\tLǎoshī zhèngzài jiāo Hànyǔ ne.\t3\t5\t문형연습-2
+형(오빠)은 전화를 하고 있어요.\tGēge zhèngzài dǎ diànhuà ne.\t3\t5\t문형연습-2
+남동생은 컴퓨터를 하고 있어요.\tDìdi zhèngzài wánr diànnǎo ne.\t3\t5\t문형연습-2
+아빠는 요리를 하고 있어요.\tBàba zhèngzài zuò cài ne.\t3\t5\t문형연습-2
+당신이 공연을 해 보세요, 제가 볼게요.\tNǐ biǎoyǎn yíxià, wǒ kànkan.\t3\t5\t문형연습-3
+당신이 노래를 해 보세요, 제가 들어볼게요.\tNǐ chàng yíxià, wǒ tīngting.\t3\t5\t문형연습-3
+당신이 만들어 보세요, 제가 맛볼게요.\tNǐ zuò yíxià, wǒ chángchang.\t3\t5\t문형연습-3
+당신이 들어 보세요, 제가 말해 볼게요.\tNǐ tīng yíxià, wǒ shuōshuo.\t3\t5\t문형연습-3
+당신은 한번 입어 보세요, 내가 볼게요.\tNǐ chuān yíxià, wǒ kànkan.\t3\t5\t문형연습-3
+태극권은 중국 전통 무술이에요.\tTàijíquán shì Zhōngguó chuántǒng wǔshù.\t3\t5\t본문-2
+매일 아침 많은 중국인들이 공원에서 태극권을 해요.\tMěi tiān zǎochen hěn duō Zhōngguórén dōu zài gōngyuán dǎ tàijíquán.\t3\t5\t본문-2
+태극권을 하면 몸에 매우 좋다고 해서, 동민이는 요즘 태극권을 배우고 있어요.\tTīng shuō dǎ tàijíquán duì shēntǐ hěn hǎo, suǒyǐ Dōngmín zuìjìn zài xué dǎ tàijíquán.\t3\t5\t본문-2
+수업 전에 왕 선생님은 먼저 그들에게 태극권을 가르쳐 주고, 매주 세 번 배워요.\tShàng kè yǐqián, Wáng lǎoshī xiān jiāo tāmen dǎ tàijíquán, měi xīngqī xué sān cì.\t3\t5\t본문-2
+지금 동민이는 태극권을 할 줄 알지만, 안나는 그다지 잘 못해요.\tXiànzài Dōngmín huì dǎ tàijíquán, kěshì Ānnà bú tài huì.\t3\t5\t본문-2
+당신이 책에 좀 써 보세요, 내가 볼게요.\tNǐ zài shū shang xiě yíxià, wǒ kànkan.\t3\t5\t예문-5
+컴퓨터는 꺼져 있고요, 핸드폰도 꺼져 있습니다.\tDiànnǎo guānzhe, shǒujī yě guānzhe.\t3\t5\t예문-5
+나는 전화를 하고 있습니다.\tWǒ zhèngzài dǎ diànhuà ne.\t3\t5\t예문-5
+우리는 수업을 하고 있지 않습니다.\tWǒmen méi zài shàng kè.\t3\t5\t예문-5
+어디가 불편하세요?\tNǐ nǎr bù shūfu?\t3\t6\t본문-1
+배가 아파요.\tWǒ dùzi téng.\t3\t6\t본문-1
+언제부터 배가 아프기 시작했어요?\tCóng shénme shíhou kāishǐ dùzi téng?\t3\t6\t본문-1
+어제 저녁이요. 지금은 더 심하게 아파요.\tZuótiān wǎnshang. Xiànzài téng de gèng lìhai.\t3\t6\t본문-1
+어젯밤에 뭘 먹었어요?\tNǐ zuótiān wǎnshang chīle shénme?\t3\t6\t본문-1
+해산물을 먹었는데, 게다가 너무 많이 먹었어요.\tWǒ chīle hǎixiān, érqiě chī de tài duō le.\t3\t6\t본문-1
+내 친구는 프랑스에서 와요.\tWǒ péngyou cóng Fǎguó lái.\t3\t6\t예문-1
+여기에서 우체국까지 멀어요?\tCóng zhèr dào yóujú yuǎn ma?\t3\t6\t예문-1`;
+const EXPR_MISSED_RAW = `당신은 어제 옷을 몇 벌 샀어요?\tNǐ zuótiān mǎile jǐ jiàn yīfu?\t3\t4\t문형연습-1
+저는 어제 스웨터 두 벌을 샀어요.\tWǒ zuótiān mǎile liǎng jiàn máoyī.\t3\t4\t문형연습-1
+당신은 오늘 몇 시간 기다렸어요?\tNǐ jīntiān děngle jǐ ge xiǎoshí?\t3\t4\t문형연습-1
+저는 오늘 세 시간 기다렸어요.\tWǒ jīntiān děngle sān ge xiǎoshí.\t3\t4\t문형연습-1
+저는 아직 안 먹었어요.\tWǒ hái méi chī.\t3\t4\t문형연습-2
+당신은 수업이 끝났어요?\tNǐ xià kè le méiyǒu?\t3\t4\t문형연습-2
+저는 이미 수업이 끝났어요.\tWǒ yǐjīng xià kè le.\t3\t4\t문형연습-2
+내년에 당신은 어디에 갈 계획이에요?\tMíngnián nǐ dǎsuan qù nǎr?\t3\t4\t문형연습-3
+내년에 저는 베이징에 중국어를 배우러 갈 계획이에요.\tMíngnián wǒ dǎsuan qù Běijīng xué Hànyǔ.\t3\t4\t문형연습-3
+언니(누나)는 상하이에 가서 뭘 할 계획이에요?\tJiějie dǎsuan qù Shànghǎi gàn shénme?\t3\t4\t문형연습-3
+언니(누나)는 상하이에 여행하러 갈 계획이에요.\tJiějie dǎsuan qù Shànghǎi lǚyóu.\t3\t4\t문형연습-3
+좀 보다 (3가지 형태)\tkànkan / kàn yi kàn / kàn yíxià\t3\t5\t동사중첩
+당신은 이 책을 좀 보세요.\tNǐ kànkan zhè běn shū.\t3\t5\t동사중첩
+좀 쉬다 (2가지 형태)\txiūxi xiūxi / xiūxi yíxià\t3\t5\t동사중첩
+나는 좀 쉬고 싶어요.\tWǒ xiǎng xiūxi xiūxi.\t3\t5\t동사중첩`;
+const VOCAB_NEW_RAW = `zìwǒ jièshào\t자기소개하다
+rèqíng\t친절하다
+dìfang\t곳, 장소
+chúfáng\t주방, 부엌
+kètīng\t거실
+wòshì\t침실
+huòzhě\t또는
+dǎzhé\t할인하다
+mǎi yī sòng yī\t1+1
+miǎnfèi\t무료, 공짜
+chuántǒng\t전통
+wǔshù\t무술
+zǎochen\t이른 아침, 새벽
+duì\t~에 대해서, ~에게 (개사)
+yǐqián\t이전, 예전
+wèishénme\t왜, 어째서
+dàifu\t의사 (동의어)
+shūfu\t편안하다, 쾌적하다, 안락하다
+bù shūfu\t불편하다
+dùzi\t배(신체)
+téng\t아프다
+tóu téng\t머리가 아프다
+tòng\t아프다 (동의어)
+cóng\t~부터, ~에서
+shénme shíhou\t언제
+de\t[정도보어] ~(de 뒷부분/형)하게 ~(de 앞부분/동)하다
+gèng\t더욱, 훨씬
+hǎixiān\t해산물
+tài…le\t너무 ~하다
+yuǎn\t멀다`;
+const VOCAB_EXIST_RAW = `érqiě\t게다가, 또한
+suǒyǐ\t그래서
+kěxī\t안타깝다, 애석하다 (아쉽게도: hěn kěxī)
+bǐjiào\t비교적
+kěshì\t그러나, 하지만
+zhe\t~한 채로 있다(동태조사)
+xǐshǒujiān\t화장실
+měitiān\t매일
+yīshēng\t의사`;
+
+/* ---- 저장소 ---- */
+async function getSrs(){ return (await sGet('srs')) || {}; }
+async function setSrs(o){ await sSet('srs', o); }
+async function getSettings(){
+  const s = (await sGet('srs-settings')) || {};
+  const q = Object.assign({expr:30, vocab:33, hsk:8}, s.quota||{});
+  return Object.assign({nextLesson:'', lessonDates:[], reviewDay:2, capEarly:90, capNormal:60, startDate:''}, s, {quota:q});
+}
+async function setSettings(s){ await sSet('srs-settings', s); }
+
+/* ---- 날짜 도우미 ---- */
+function diffDays(a,b){ return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000); }
+function fmtMD(ds){ const d=new Date(ds+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate()+'('+DOW_KO[d.getDay()]+')'; }
+function fmtLesson(s){
+  if(!s.nextLesson) return '';
+  const ds = s.nextLesson.slice(0,10), t = s.nextLesson.slice(11,16) || '';
+  let tt = '';
+  if(t){ let [h,m] = t.split(':').map(Number); const ap = h<12?'오전':'오후'; let hh = h%12; if(hh===0) hh=12; tt = ' '+ap+' '+hh+'시'+(m?(' '+m+'분'):''); }
+  return fmtMD(ds)+tt;
+}
+function lessonDateOf(s){ return s.nextLesson ? s.nextLesson.slice(0,10) : null; }
+function pastLessons(s){ return (s.lessonDates||[]).filter(d=>d<=todayStr()).sort(); }
+function lastLessonDate(s){ const a=pastLessons(s); return a.length?a[a.length-1]:null; }
+function prevLessonDate(s){ const a=pastLessons(s); return a.length>1?a[a.length-2]:(a.length?a[a.length-1]:null); }
+function normAny(t){ return String(t||'').toLowerCase().replace(/[^\p{L}\p{N}]/gu,''); }
+function splitKey(key){ const i=key.indexOf(':'); return [key.slice(0,i), key.slice(i+1)]; }
+
+/* ---- 카드 상태 ---- */
+function isReqOpen(e){ return !!(e && e.req && !e.done); }
+function markReq(srs, deck, id, kind, cycle){
+  const key = deck+':'+id;
+  const e = srs[key] || {st:0};
+  e.req = kind; e.cycle = cycle; e.done = false; e.days = []; e.added = todayStr(); e.due = todayStr();
+  srs[key] = e;
+}
+async function srsRate(deck, id, good){
+  const srs = await getSrs(); const today = todayStr(); const key = deck+':'+id;
+  const e = srs[key] || {st:0, due:today};
+  if(!e.first) e.first = today;
+  if(good){
+    if(e.lastGood===today && e.lastWrong!==today){ srs[key]=e; await setSrs(srs); return; }   // 오늘 이미 맞힌 카드 — 중복 반영 안 함
+    const wrongToday = e.lastWrong===today;
+    e.lastGood = today;
+    if(isReqOpen(e)){
+      e.days = e.days || [];
+      if(!wrongToday && !e.days.includes(today)) e.days.push(today);   // 오늘 한 번이라도 틀렸으면 오늘은 '맞힌 날'로 안 쳐요
+      if(e.days.length>=2){ e.done = true; e.st = 1; e.due = addDays(today, SRS_INT[1]); }
+      else { e.st = 0; e.due = addDays(today, 1); }
+    } else if(wrongToday){ e.st = 0; e.due = addDays(today, 1); }
+    else { e.st = Math.min((e.st||0)+1, SRS_MAXIDX[deck]); e.due = addDays(today, SRS_INT[e.st]); }
+  } else {
+    e.lastWrong = today; e.st = 0; e.due = addDays(today, 1);
+    if(e.days) e.days = e.days.filter(d=>d!==today);
+  }
+  srs[key] = e;
+  await setSrs(srs);
+}
+/* 한자 '신규 암기'(전체 복습)에서 정답으로 외운 한자는 유지 복습 대상으로 들어가요 */
+async function srsHskNew(card){
+  const srs = await getSrs(); const today = todayStr(); const key = 'hsk:'+card.id;
+  if(srs[key]) return;
+  srs[key] = {st:0, due:addDays(today,1), first:today, lastGood:today};
+  await setSrs(srs);
+}
+
+/* ---- 오늘의 계획 ---- */
+async function loadAllDecks(){
+  const [hsk,vocab,expr] = await Promise.all(DECKS3.map(d=>loadDeck(DECK_KEY[d])));
+  return {hsk,vocab,expr};
+}
+function dailyCap(s){
+  const days = s.startDate ? diffDays(s.startDate, todayStr()) : 99;
+  return days < 14 ? s.capEarly : s.capNormal;
+}
+async function buildPlan(decks, srs, s){
+  const today = todayStr();
+  const ids = {hsk:[], vocab:[], expr:[]};
+  const exists = {}; DECKS3.forEach(d=>{ exists[d] = new Set(decks[d].map(c=>c.id)); });
+  const dueList = []; let reqCount = 0;
+  Object.entries(srs).forEach(([key,e])=>{
+    const [deck,id] = splitKey(key);
+    if(!exists[deck] || !exists[deck].has(id)) return;
+    if(isReqOpen(e)){ ids[deck].push(id); reqCount++; }
+    else if(e.due && e.due<=today){ dueList.push({deck,id,due:e.due,st:e.st||0}); }
+  });
+  let remaining = Math.max(0, dailyCap(s) - reqCount);
+  dueList.sort((a,b)=> a.due<b.due?-1 : a.due>b.due?1 : a.st-b.st);
+  const takenDue = dueList.slice(0, remaining);
+  takenDue.forEach(x=>ids[x.deck].push(x.id));
+  remaining -= takenDue.length;
+  // 첫 점검: 아직 한 번도 안 본 카드를 하루 정해진 개수만큼 (표현 → 단어 → 한자 순)
+  const firstToday = {hsk:0, vocab:0, expr:0};
+  Object.entries(srs).forEach(([key,e])=>{ const [d]=splitKey(key); if(e.first===today && !e.req) firstToday[d]++; });
+  const picked = new Set(Object.keys(srs));
+  const takeFor = d => Math.max(0, Math.min((s.quota[d]||0) - firstToday[d], remaining));
+  // 표현: 그룹 단위로, 가장 최근 과부터
+  let n = takeFor('expr');
+  if(n>0){
+    const groups = new Map();
+    decks.expr.forEach(c=>{ if(picked.has('expr:'+c.id)) return; const g=(c.book??'')+'-'+(c.lesson??'')+'-'+(c.group||''); if(!groups.has(g)) groups.set(g,[]); groups.get(g).push(c); });
+    const arr = [...groups.values()].reverse();
+    let got = 0;
+    for(const grp of arr){ if(got>=n) break; for(const c of grp){ if(got>=remaining) break; ids.expr.push(c.id); got++; } }
+    remaining -= got;
+  }
+  n = takeFor('vocab');
+  if(n>0){
+    const list = decks.vocab.filter(c=>!picked.has('vocab:'+c.id)).reverse().slice(0,n);
+    list.forEach(c=>ids.vocab.push(c.id)); remaining -= list.length;
+  }
+  n = takeFor('hsk');
+  if(n>0){
+    const pool = new Set((await sGet('srs-hsk-pool'))||[]);
+    const list = decks.hsk.filter(c=>pool.has(c.id) && !picked.has('hsk:'+c.id))
+      .sort((a,b)=> (Number(b.level)-Number(a.level)) || (Number(b.no)-Number(a.no))).slice(0,n);
+    list.forEach(c=>ids.hsk.push(c.id)); remaining -= list.length;
+  }
+  return {date:today, ids};
+}
+function planLeftCount(plan, srs){
+  let n = 0; const day = plan.date;
+  DECKS3.forEach(d=>{ plan.ids[d].forEach(id=>{ const e=srs[d+':'+id]; if(!(e && e.lastGood===day)) n++; }); });
+  return n;
+}
+async function ensurePlan(decks, srs, s){
+  const today = todayStr();
+  let plan = await sGet('srs-plan');
+  if(!plan || plan.date!==today){
+    if(plan && plan.date){
+      const hist = (await sGet('srs-hist')) || {};
+      hist[plan.date] = {total: DECKS3.reduce((a,d)=>a+plan.ids[d].length,0), left: planLeftCount(plan, srs)};
+      await sSet('srs-hist', hist);
+    }
+    plan = await buildPlan(decks, srs, s);
+    await sSet('srs-plan', plan);
+  } else {
+    let changed = false;
+    const exists = {}; DECKS3.forEach(d=>{ exists[d] = new Set(decks[d].map(c=>c.id)); });
+    Object.entries(srs).forEach(([key,e])=>{
+      if(!isReqOpen(e)) return;
+      const [deck,id] = splitKey(key);
+      if(exists[deck] && exists[deck].has(id) && !plan.ids[deck].includes(id)){ plan.ids[deck].push(id); changed = true; }
+    });
+    if(changed) await sSet('srs-plan', plan);
+  }
+  return plan;
+}
+function planRemaining(plan, srs, deck){
+  const today = todayStr();
+  return plan.ids[deck].filter(id=>{ const e=srs[deck+':'+id]; return !(e && e.lastGood===today); });
+}
+
+/* ---- 복습 시작 ---- */
+function orderForReview(deck, list, deckCards, srs){
+  const isReq = c=>isReqOpen(srs[deck+':'+c.id]);
+  const a = list.filter(isReq), b = list.filter(c=>!isReq(c));
+  const f = deck==='expr' ? (x=>orderExprByGroup(x, deckCards)) : shuffle;
+  return f(a).concat(f(b));
+}
+async function openSessionOf(deck, list, deckCards, srs, mode){
+  const queue = orderForReview(deck, list, deckCards, srs).map(c=>({...c, _key:deck+':'+c.id}));
+  const starred = new Set(await getStarredKeys());
+  review = {deck, queue, index:0, stage:'question', starred, mode};
+  document.getElementById('reviewOverlay').classList.add('active');
+  pushOverlayState();
+  renderReviewStep();
+}
+async function startToday(deck){
+  const [decks, srs, s] = await Promise.all([loadAllDecks(), getSrs(), getSettings()]);
+  const plan = await ensurePlan(decks, srs, s);
+  const byId = new Map(decks[deck].map(c=>[c.id,c]));
+  const list = planRemaining(plan, srs, deck).map(id=>byId.get(id)).filter(Boolean);
+  if(list.length===0){ toast(DECK_NAME_KO[deck]+' 오늘 할 것을 모두 끝냈어요'); return; }
+  openSessionOf(deck, list, decks[deck], srs, 'today');
+}
+function revDayIds(decks, srs, s){
+  const cycles = new Set([lastLessonDate(s), prevLessonDate(s)].filter(Boolean));
+  const since = addDays(todayStr(), -14);
+  const out = {hsk:[], vocab:[], expr:[]};
+  const exists = {}; DECKS3.forEach(d=>{ exists[d] = new Set(decks[d].map(c=>c.id)); });
+  Object.entries(srs).forEach(([key,e])=>{
+    const [deck,id] = splitKey(key);
+    if(!exists[deck] || !exists[deck].has(id)) return;
+    if((e.req && cycles.has(e.cycle)) || (e.lastWrong && e.lastWrong>=since)) out[deck].push(id);
+  });
+  return out;
+}
+async function startRevDay(deck){
+  const [decks, srs, s] = await Promise.all([loadAllDecks(), getSrs(), getSettings()]);
+  const ids = new Set(revDayIds(decks, srs, s)[deck]);
+  const list = decks[deck].filter(c=>ids.has(c.id));
+  if(list.length===0){ toast('복습일에 점검할 '+DECK_NAME_KO[deck]+' 카드가 없어요'); return; }
+  openSessionOf(deck, list, decks[deck], srs, 'revday');
+}
+
+/* ---- 처음 한 번 실행: 기존 완료 기록 초기화 + 이번 주 분량 등록 ---- */
+function insertByLesson(deck, items){
+  items.forEach(it=>{
+    const myKey = (Number(it.book)||0)*1000+(Number(it.lesson)||0);
+    let pos = -1;
+    for(let i=0;i<deck.length;i++){ const c=deck[i]; if(c.book!=null && ((Number(c.book)||0)*1000+(Number(c.lesson)||0))<=myKey) pos=i; }
+    if(pos<0) deck.push(it); else deck.splice(pos+1,0,it);
+  });
+  return deck;
+}
+function parseExprRaw(raw){
+  return raw.trim().split('\n').map(line=>{ const [ko,py,book,lesson,group]=line.split('\t'); return {ko,py,book:Number(book),lesson:Number(lesson),group}; });
+}
+async function srsInitV1(){
+  if(await sGet('srs-init-v1')) return;
+  const today = todayStr();
+  // 1) 지금까지의 '정답 완료' 기록은 처음부터 다시 (즐겨찾기 표시는 그대로)
+  await setCleared([]); await setClearedMission([]); await setClearedStarred([]);
+  // 2) 설정
+  const s = await getSettings();
+  s.nextLesson = '2026-10-15T10:00'; s.lessonDates = [LESSON_PREV, LESSON_THIS]; s.reviewDay = 3; s.startDate = today;
+  await setSettings(s);
+  const srs = {};
+  // 3) 단어
+  const vocab = await loadDeck('textbook-vocab');
+  VOCAB_NEW_RAW.trim().split('\n').forEach(line=>{
+    const [py,ko] = line.split('\t');
+    let card = vocab.find(c=>normVocabPy(c.py)===normVocabPy(py) && c.ko===ko);
+    if(!card){ card = {id:uid('vocab'), py, ko}; vocab.push(card); }
+    markReq(srs,'vocab',card.id,'tw',LESSON_THIS);
+  });
+  VOCAB_EXIST_RAW.trim().split('\n').forEach(line=>{
+    const [py,ko] = line.split('\t');
+    let card = vocab.find(c=>normVocabPy(c.py)===normVocabPy(py));
+    if(!card){ card = {id:uid('vocab'), py, ko}; vocab.push(card); }
+    markReq(srs,'vocab',card.id,'tw',LESSON_THIS);
+  });
+  await saveDeck('textbook-vocab', vocab);
+  // 4) 표현
+  const expr = await loadDeck('textbook-expr');
+  const fresh = [];
+  [[EXPR_TW_RAW,'tw',LESSON_THIS],[EXPR_MISSED_RAW,'missed',LESSON_PREV]].forEach(([raw,kind,cycle])=>{
+    parseExprRaw(raw).forEach(r=>{
+      let card = expr.concat(fresh).find(c=>Number(c.book)===r.book && Number(c.lesson)===r.lesson && normAny(c.py)===normAny(r.py));
+      if(!card){ card = {id:uid('expr'), ...r}; fresh.push(card); }
+      markReq(srs,'expr',card.id,kind,cycle);
+    });
+  });
+  insertByLesson(expr, fresh);
+  await saveDeck('textbook-expr', expr);
+  // 5) 한자: 1급 전체 + 2급 1~110번은 '이미 외운 한자'(첫 점검 대상), 이번 주 신규 = 2급 111~126
+  const hsk = await loadDeck('hsk-words');
+  await sSet('srs-hsk-pool', hsk.filter(c=>String(c.level)==='1' || (String(c.level)==='2' && Number(c.no)<=110)).map(c=>c.id));
+  await sSet('hsk-review-scope', hsk.filter(c=>String(c.level)==='2' && Number(c.no)>=111 && Number(c.no)<=126).map(c=>c.id));
+  await sSet('hsk-range-set', LESSON_THIS);
+  await setSrs(srs);
+  await sSet('srs-plan', null);
+  await sSet('srs-init-v1', true);
+}
+
+/* ---- 학습 비서: 상태 분석 ---- */
+const LEVEL_RANK = {ok:0, warn:1, bad:2};
+function analyzeState(decks, srs, s, plan, hist, hskScopeInfo){
+  const today = todayStr(); const now = new Date();
+  const ld = lessonDateOf(s);
+  const lessonAt = s.nextLesson ? new Date(s.nextLesson) : null;
+  const passed = !!(lessonAt && now > lessonAt);
+  const lastL = lastLessonDate(s);
+  const exists = {}; DECKS3.forEach(d=>{ exists[d] = new Set(decks[d].map(c=>c.id)); });
+  // 필수 암기 집계
+  const stat = {vocab:{tw:{t:0,d:0}, missed:{t:0,d:0}, old:{t:0,d:0}}, expr:{tw:{t:0,d:0}, missed:{t:0,d:0}, old:{t:0,d:0}}};
+  const open = [];
+  let addedThisWeek = 0;
+  Object.entries(srs).forEach(([key,e])=>{
+    const [deck,id] = splitKey(key);
+    if(!e.req || !exists[deck] || !exists[deck].has(id)) return;
+    let bucket;
+    if(e.cycle===lastL && e.req==='tw') bucket='tw';
+    else if(e.req==='missed' && e.cycle===prevLessonDate(s)) bucket='missed';
+    else bucket='old';
+    if(stat[deck]){ stat[deck][bucket].t++; if(e.done) stat[deck][bucket].d++; }
+    if(lastL && e.added && e.added>=lastL) addedThisWeek++;
+    if(!e.done){
+      const days = e.days || [];
+      const doneToday = days.includes(today);
+      const wrongToday = e.lastWrong===today;
+      const need = 2 - days.length;
+      const todayUsable = !doneToday && !wrongToday;
+      open.push({deck,id,need,offset: todayUsable ? need-1 : need});
+    }
+  });
+  // 오늘 계획
+  const left = {}; let leftTotal = 0, planTotal = 0;
+  DECKS3.forEach(d=>{ left[d] = planRemaining(plan, srs, d).length; leftTotal += left[d]; planTotal += plan.ids[d].length; });
+  // 위험도 계산
+  let level = 'ok';
+  const raise = l=>{ if(LEVEL_RANK[l]>LEVEL_RANK[level]) level = l; };
+  const msgs = [];       // {kind:'bad'|'warn'|'info', text, action?}
+  const daysToLesson = ld ? diffDays(today, ld) : null;
+  let finishDate = null, slack = null;
+  if(!ld){ raise('bad'); msgs.push({kind:'bad', text:'다음 과외 날짜가 입력되어 있지 않아요. 날짜가 있어야 이번 주 준비가 충분한지 계산할 수 있어요.', action:'settings'}); }
+  else if(passed){ raise('bad'); msgs.push({kind:'bad', text:'입력된 과외 시간('+fmtLesson(s)+')이 지났어요. 새 과외 날짜를 입력하고 오늘 수업 분량을 추가해주세요.', action:'settings'}); }
+  else if(open.length>0){
+    const maxOff = Math.max(...open.map(o=>o.offset));
+    finishDate = addDays(today, maxOff);
+    slack = diffDays(finishDate, addDays(ld,-1));    // 과외 전날까지 남는 여유일 (0이면 하루도 못 쉬어요)
+    if(slack<0){ raise('bad'); msgs.push({kind:'bad', text:'지금 남은 필수 암기 카드는 과외 전에 "서로 다른 날 2번 맞히기"를 끝낼 시간이 부족해요. 오늘 가능한 만큼 최대한 끝내고, 과외 때 헷갈릴 수 있다는 점을 감안해주세요.'}); }
+    else if(slack===0){ raise('warn'); msgs.push({kind:'warn', text:'여유가 하루도 없어요. 오늘부터 하루도 빠지지 않고 해야 과외 전에 필수 암기가 끝나요.'}); }
+  }
+  // 어제 못 한 것
+  const y = addDays(today,-1);
+  const yh = hist[y];
+  if(yh && yh.left>0 && open.length>0){ raise('warn'); msgs.push({kind:'warn', text:'어제 '+yh.left+'개를 못 끝냈어요. 오늘 분량에 합쳐져 있어요.'}); }
+  // 필수 설정 점검
+  const rangeSet = hskScopeInfo.rangeSet;
+  if(lastL && (!rangeSet || rangeSet<lastL)){ raise('warn'); msgs.push({kind:'warn', text:'이번 주 신규 한자 범위를 아직 정하지 않았어요. 한자 카드의 "복습 시작"에서 범위를 골라주세요.', action:'hsk'}); }
+  if(lastL && addedThisWeek===0){ raise('warn'); msgs.push({kind:'warn', text:'이번 주 수업 분량(단어·표현)이 아직 하나도 등록되지 않았어요. 사진을 정리해서 "+ 표현 추가", "+ 단어 추가"에 넣어주세요.'}); }
+  if(s.reviewDay==null){ raise('warn'); msgs.push({kind:'warn', text:'복습일 요일이 정해져 있지 않아요.', action:'settings'}); }
+  const reqCapOver = open.length > dailyCap(s);
+  if(reqCapOver){ raise('warn'); msgs.push({kind:'warn', text:'필수 암기 카드('+open.length+'개)가 하루 최대 개수('+dailyCap(s)+'개)보다 많아요. 설정에서 하루 최대 개수를 늘려주세요.', action:'settings'}); }
+  return {level, msgs, stat, open, left, leftTotal, planTotal, daysToLesson, finishDate, slack, passed, lessonAt, ld, lastL};
+}
+function statLine(label, o){
+  if(o.t===0) return '';
+  const rest = o.t-o.d;
+  return `<li>${label}: <b>${o.d}/${o.t}</b> 완료${rest>0?` <span style="color:var(--seal);">(남음 ${rest})</span>`:' ✓'}</li>`;
+}
+function secretaryHTML(an, decks, srs, s, hskScopeInfo, hist){
+  const today = todayStr();
+  const colors = {ok:'var(--jade)', warn:'var(--gold)', bad:'var(--seal)'};
+  const head = {
+    ok:  ['✅ 순조로워요', '오늘 할 것만 해도 과외 전에 필수 암기가 모두 끝나요.'],
+    warn:['⚠️ 주의가 필요해요', '아래 알림을 확인해주세요.'],
+    bad: ['🚨 지금 확인이 필요해요', '아래 알림을 먼저 해결해주세요.']
+  }[an.level];
+  let lessonLine;
+  if(!an.ld) lessonLine = '다음 과외: <b>미정</b>';
+  else if(an.passed) lessonLine = '다음 과외: <b>'+fmtLesson(s)+'</b> (지남)';
+  else if(an.daysToLesson===0) lessonLine = '다음 과외: <b>오늘 '+fmtLesson(s).replace(/^[^ ]+ /,'')+'</b>';
+  else lessonLine = '다음 과외: <b>'+fmtLesson(s)+'</b> · D-'+an.daysToLesson;
+  const s1 = an.stat;
+  const reqLines = [
+    statLine('이번 주 신규 표현', s1.expr.tw), statLine('지난주 놓친 표현', s1.expr.missed),
+    statLine('이번 주 신규 단어', s1.vocab.tw), statLine('지난주 놓친 단어', s1.vocab.missed),
+    statLine('이전 주에서 이월된 필수 표현', s1.expr.old), statLine('이전 주에서 이월된 필수 단어', s1.vocab.old)
+  ].join('');
+  const hz = hskScopeInfo.total>0 ? `<li>이번 주 신규 한자: <b>${hskScopeInfo.done}/${hskScopeInfo.total}</b> 외움${hskScopeInfo.total-hskScopeInfo.done>0?` <span style="color:var(--seal);">(남음 ${hskScopeInfo.total-hskScopeInfo.done})</span>`:' ✓'}</li>` : '';
+  // 이대로 하면?
+  let forecast = '';
+  if(an.open.length===0){
+    forecast = '필수 암기 카드를 모두 완료했어요. 남은 기간에는 오늘 할 것과 복습일 점검으로 잊지 않게 유지하면 돼요.';
+  } else if(an.ld && !an.passed && an.finishDate){
+    if(an.slack<0) forecast = `오늘부터 하루도 안 빼고 해도 모든 필수 카드는 ${fmtMD(an.finishDate)}에야 끝나는데, 과외는 ${fmtMD(an.ld)}이에요.`;
+    else forecast = `오늘부터 매일 "오늘 할 것"을 끝내면 모든 필수 카드는 <b>${fmtMD(an.finishDate)}</b>까지 완료돼요. 과외 전날(${fmtMD(addDays(an.ld,-1))})까지 <b>${an.slack}일</b> 여유가 있어요${an.slack>=1?' (그만큼 쉬어도 돼요)':''}.`;
+  }
+  // 시험 대비(현재 권 표현)
+  const curBook = decks.expr.reduce((m,c)=>Math.max(m, Number(c.book)||0), 0);
+  const bookCards = decks.expr.filter(c=>Number(c.book)===curBook);
+  let checked = 0, overdue = 0, recentWrong = 0;
+  const wrongSince = addDays(today,-7);
+  bookCards.forEach(c=>{ const e=srs['expr:'+c.id]; if(e){ checked++; if(e.due && e.due<today && !isReqOpen(e)) overdue++; if(e.lastWrong && e.lastWrong>=wrongSince) recentWrong++; } });
+  const vChecked = decks.vocab.filter(c=>srs['vocab:'+c.id]).length;
+  const hChecked = decks.hsk.filter(c=>srs['hsk:'+c.id]).length;
+  const pool = hskScopeInfo.poolSize;
+  const rdLine = (s.reviewDay==null) ? '' : `<li>복습일은 매주 <b>${DOW_KO[s.reviewDay]}요일</b>이에요. 그날은 홈에 "복습일 점검"이 열려서 이번 주·지난주 분량과 최근 틀린 카드를 한 번 더 봐요.</li>`;
+  const msgHTML = an.msgs.map(m=>`<div style="display:flex;gap:6px;align-items:flex-start;margin-top:8px;padding:8px 10px;border-radius:8px;background:${m.kind==='bad'?'#FCE9E9':m.kind==='warn'?'#FBF1DB':'var(--paper-2)'};font-size:13px;line-height:1.5;">
+      <span>${m.kind==='bad'?'🚨':m.kind==='warn'?'⚠️':'ℹ️'}</span>
+      <span style="flex:1;">${esc(m.text)}${m.action==='settings'?` <a href="#" onclick="openSettings();return false;" style="color:var(--seal);font-weight:700;">설정 열기</a>`:''}${m.action==='hsk'?` <a href="#" onclick="openReviewScope();return false;" style="color:var(--seal);font-weight:700;">한자 범위 정하기</a>`:''}</span>
+    </div>`).join('');
+  return `<div class="card" style="border-left:5px solid ${colors[an.level]};">
+    <div class="row-between">
+      <h3 style="margin:0;">🧑‍🏫 학습 비서</h3>
+      <span style="font-size:12px;font-weight:700;color:${colors[an.level]};">${head[0]}</span>
+    </div>
+    <div class="sub" style="margin:4px 0 6px;">${lessonLine}</div>
+    <div style="font-size:13.5px;line-height:1.55;">${head[1]}</div>
+    ${msgHTML}
+    <div style="margin-top:12px;font-size:13px;line-height:1.6;">
+      <b>📌 오늘</b>
+      <ul style="margin:4px 0 8px;padding-left:18px;">
+        <li>오늘 남은 카드: 한자 <b>${an.left.hsk}</b> · 단어 <b>${an.left.vocab}</b> · 표현 <b>${an.left.expr}</b> (총 <b>${an.leftTotal}</b>개)${an.leftTotal===0?' — 오늘 할 것을 모두 끝냈어요 🎉':''}</li>
+        ${rdLine}
+      </ul>
+      <b>🎯 이번 주 필수 암기 진행</b>
+      <ul style="margin:4px 0 8px;padding-left:18px;">
+        ${reqLines}${hz}
+        ${(reqLines+hz)===''?'<li>등록된 필수 암기 카드가 없어요.</li>':''}
+      </ul>
+      ${forecast?`<b>🔮 이대로 하면?</b><div style="margin:4px 0 8px;">${forecast}</div>`:''}
+      <details style="margin-top:4px;">
+        <summary style="cursor:pointer;color:var(--ink-soft);">📚 시험 대비 현황 (현재 ${curBook}권 전체 기준)</summary>
+        <ul style="margin:6px 0 0;padding-left:18px;">
+          <li>${curBook}권 표현: 전체 <b>${bookCards.length}</b>개 중 점검한 것 <b>${checked}</b>개 (아직 한 번도 안 본 것 <b>${bookCards.length-checked}</b>개)</li>
+          <li>복습 시점을 놓친 카드: <b>${overdue}</b>개 · 최근 7일 안에 틀린 카드: <b>${recentWrong}</b>개</li>
+          <li>단어: 전체 ${decks.vocab.length}개 중 점검한 것 ${vChecked}개</li>
+          <li>한자 유지 복습: 외운 것으로 처리한 ${pool}개 중 점검한 것 ${hChecked}개</li>
+          <li>아직 안 본 카드는 매일 첫 점검 개수(설정)만큼씩 "오늘 할 것"에 섞여 나와요.</li>
+        </ul>
+      </details>
+    </div>
+  </div>`;
+}
+
+/* ---- 홈 화면 ---- */
+function weekCirclesHTML(log, today){
+  const monday = getMondayDateStr(new Date());
+  const cells = [];
+  for(let i=0;i<7;i++){
+    const ds = addDays(monday, i);
+    const isToday = ds===today, done = !!log[ds];
+    const future = ds>today;
+    cells.push(`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <span style="font-size:11px;color:${isToday?'var(--seal)':'var(--ink-soft)'};font-weight:${isToday?'700':'400'};">${MISSION_DAYS[i]}</span>
+      <div class="${isToday&&!done?'today-pulse':''}" style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;
+        background:${done?'var(--jade)':'var(--paper-2)'};color:${done?'#fff':'var(--ink-soft)'};
+        border:${isToday&&!done?'2px solid var(--seal)':(future?'1px dashed var(--line)':'1px solid var(--line)')};">${done?'✓':''}</div>
+    </div>`);
+  }
+  return cells.join('');
+}
+function todayRowHTML(deck, left, total){
+  const done = left===0;
+  return `<div class="row-between" style="padding:9px 0;border-bottom:1px solid #F0EBDD;">
+    <div><b style="font-size:14px;">${DECK_NAME_KO[deck]}</b>
+      <span class="sub" style="margin-left:8px;">${total===0?'오늘 할 것 없음':(done?'모두 완료 ✓':`남은 <b style="color:var(--seal);">${left}</b>개 / 오늘 ${total}개`)}</span></div>
+    <button class="${done?'ghost':'primary'} small" ${(done)?'disabled':''} onclick="startToday('${deck}')">${done?'완료':'시작'}</button>
+  </div>`;
+}
+async function renderHome(){
+  const el = document.getElementById('view-home');
+  el.innerHTML = '<div class="empty">불러오는 중…</div>';
+  const [decks, srs, s, starredArr, cleared, clearedStarredArr, rawScope, rangeSet] = await Promise.all([
+    loadAllDecks(), getSrs(), getSettings(), getStarredKeys(), getCleared(), getClearedStarred(), sGet('hsk-review-scope'), sGet('hsk-range-set')
+  ]);
+  const plan = await ensurePlan(decks, srs, s);
+  const hist = (await sGet('srs-hist')) || {};
+  const today = todayStr();
+  // 이번 주 신규 한자 진행
+  const scopeIds = resolveHskScope(decks.hsk, rawScope);
+  const clearedSet = new Set(cleared), clearedStarredSet = new Set(clearedStarredArr);
+  const hskDone = scopeIds.filter(id=>clearedSet.has('hsk:'+id)).length;
+  const poolArr = (await sGet('srs-hsk-pool')) || [];
+  const hskScopeInfo = {total:scopeIds.length, done:hskDone, rangeSet, poolSize:poolArr.length};
+  const an = analyzeState(decks, srs, s, plan, hist, hskScopeInfo);
+  // 오늘 완료 기록 / 연속 달성
+  let log = (await sGet('mission-completion-log')) || {};
+  if(an.leftTotal===0 && !log[today]){ log[today] = true; await sSet('mission-completion-log', log); }
+  const streak = computeStreak(log, ()=>false);
+  const streakEl = document.getElementById('streakDisplay');
+  if(streakEl) streakEl.textContent = '🔥'+streak+'일 연속 성공 중';
+  const doneDays = Object.keys(log).filter(d=>d>=getMondayDateStr(new Date()) && d<=today).length;
+
+  // 복습일 점검
+  let revHTML = '';
+  if(s.reviewDay!=null && new Date().getDay()===Number(s.reviewDay)){
+    const rd = revDayIds(decks, srs, s);
+    const tot = rd.hsk.length+rd.vocab.length+rd.expr.length;
+    revHTML = `<div class="card" style="border-left:5px solid var(--gold);">
+      <div class="row-between"><h3 style="margin:0;">📝 복습일 점검</h3><span class="sub">오늘은 ${DOW_KO[s.reviewDay]}요일 복습일이에요</span></div>
+      <div class="sub" style="margin:6px 0;">이번 주·지난주 필수 분량과 최근 2주 안에 틀린 카드를 한 번 더 점검해요. (총 ${tot}개)</div>
+      <div class="hstack" style="flex-wrap:wrap;row-gap:6px;">
+        ${DECKS3.map(d=>`<button class="ghost small" ${rd[d].length===0?'disabled':''} onclick="startRevDay('${d}')">${DECK_NAME_KO[d]} ${rd[d].length}개</button>`).join('')}
+      </div>
+    </div>`;
+  }
+  // 그 밖의 복습(자유 복습 / 즐겨찾기)
+  function general(deckName, cards){ return {remain: cards.filter(c=>!clearedSet.has(deckName+':'+c.id)).length, total: cards.length}; }
+  function starredInfo(deckName){
+    const total = starredArr.filter(k=>k.startsWith(deckName+':')).length;
+    const remain = starredArr.filter(k=>k.startsWith(deckName+':') && !clearedStarredSet.has(k)).length;
+    return {remain,total};
+  }
+  const hskGeneral = {remain: scopeIds.length-hskDone, total: scopeIds.length};
+  const none = {remain:0,total:0};
+  const freeHTML = `
+    ${homeDeckCard('hsk','한자 신규 암기','이번 주 외울 범위를 골라서 쓰기 연습', hskGeneral, starredInfo('hsk'), none, `openReviewScope()`)}
+    <details style="margin-bottom:14px;"><summary style="cursor:pointer;color:var(--ink-soft);font-size:13px;margin-bottom:8px;">자유 복습 · 즐겨찾기 (단어·표현)</summary>
+      ${homeDeckCard('vocab','단어','뜻 · 병음 (자유 복습)', general('vocab',decks.vocab), starredInfo('vocab'), none, `startReview('vocab')`)}
+      ${homeDeckCard('expr','표현','뜻 보고 병음 쓰기 (자유 복습)', general('expr',decks.expr), starredInfo('expr'), none, `openExprScope()`)}
+    </details>`;
+
+  el.innerHTML = `
+    <h2 class="section-title">학습 비서</h2>
+    ${secretaryHTML(an, decks, srs, s, hskScopeInfo, hist)}
+    <h2 class="section-title">오늘 할 것</h2>
+    <div class="card">
+      <div class="row-between"><h3 style="margin:0;">📅 오늘의 미션</h3><span class="sub">${an.leftTotal===0?'모두 완료!':`총 ${an.leftTotal}개 남음`}</span></div>
+      <div style="margin-top:4px;">
+        ${DECKS3.map(d=>todayRowHTML(d, an.left[d], plan.ids[d].length)).join('')}
+      </div>
+    </div>
+    ${revHTML}
+    <div class="card">
+      <div class="row-between"><h3>🔥 이번 주 일일 미션</h3><span class="sub">${doneDays}/7일 완료</span></div>
+      <div class="hstack" style="justify-content:space-between;margin-top:8px;">${weekCirclesHTML(log, today)}</div>
+    </div>
+    <h2 class="section-title">그 밖의 복습</h2>
+    ${freeHTML}
+    <div class="hstack" style="margin-top:4px;">
+      <button class="ghost" style="flex:1;" onclick="openSettings()">⚙️ 학습 설정</button>
+    </div>
+  `;
+}
+
+/* ---- 설정 ---- */
+async function openSettings(){
+  const s = await getSettings();
+  const rangeSet = await sGet('hsk-range-set');
+  const nl = s.nextLesson || '';
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <h3>⚙️ 학습 설정</h3>
+    <label class="field-label">다음 과외 날짜와 시간 <span style="color:var(--seal);">(필수)</span></label>
+    <div class="hstack" style="margin-bottom:10px;">
+      <input type="date" id="setLessonDate" value="${esc(nl.slice(0,10))}">
+      <input type="time" id="setLessonTime" value="${esc(nl.slice(11,16)||'10:00')}">
+    </div>
+    <label class="field-label">복습일 요일 <span style="color:var(--seal);">(필수 · 과외 전날로 정해두세요)</span></label>
+    <select id="setReviewDay" style="margin-bottom:10px;">
+      ${[1,2,3,4,5,6,0].map(d=>`<option value="${d}" ${Number(s.reviewDay)===d?'selected':''}>${DOW_KO[d]}요일</option>`).join('')}
+    </select>
+    <div class="hstack" style="margin-bottom:10px;">
+      <div style="flex:1;"><label class="field-label">하루 최대 (처음 2주)</label><input type="number" id="setCapEarly" min="20" value="${s.capEarly}"></div>
+      <div style="flex:1;"><label class="field-label">하루 최대 (이후)</label><input type="number" id="setCapNormal" min="20" value="${s.capNormal}"></div>
+    </div>
+    <label class="field-label">처음 보는 카드를 하루에 몇 개씩 점검할까요?</label>
+    <div class="hstack" style="margin-bottom:6px;">
+      <div style="flex:1;"><label class="field-label">한자</label><input type="number" id="setQHsk" min="0" value="${s.quota.hsk}"></div>
+      <div style="flex:1;"><label class="field-label">단어</label><input type="number" id="setQVocab" min="0" value="${s.quota.vocab}"></div>
+      <div style="flex:1;"><label class="field-label">표현</label><input type="number" id="setQExpr" min="0" value="${s.quota.expr}"></div>
+    </div>
+    <div class="hint">필수 암기(이번 주 신규·지난주 놓친 것)는 하루 최대 개수와 상관없이 항상 먼저 나와요. 남는 자리에 틀린 카드, 복습 시점이 된 카드, 처음 보는 카드가 차례로 들어가요.</div>
+    <div class="hint" style="margin-top:0;">이번 주 신규 한자 범위: ${rangeSet?esc(fmtMD(rangeSet))+'에 설정함':'아직 정하지 않았어요'}</div>
+    <div class="hstack" style="margin-bottom:10px;flex-wrap:wrap;row-gap:6px;">
+      <button class="ghost small" onclick="closeModal();setTimeout(openReviewScope,50);">이번 주 신규 한자 범위 정하기</button>
+      <button class="ghost small" onclick="rebuildPlan()">오늘 계획 다시 만들기</button>
+    </div>
+    <div class="hstack">
+      <button class="ghost" style="flex:1;" onclick="closeModal()">취소</button>
+      <button class="primary" style="flex:1;" onclick="saveSettings()">저장</button>
+    </div>
+  `;
+  document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
+}
+async function saveSettings(){
+  const s = await getSettings();
+  const d = document.getElementById('setLessonDate').value, t = document.getElementById('setLessonTime').value || '10:00';
+  if(!d){ toast('다음 과외 날짜를 입력해주세요'); return; }
+  const nl = d+'T'+t;
+  const old = s.nextLesson;
+  if(old && old.slice(0,10)<=todayStr() && old.slice(0,10)<d){
+    s.lessonDates = (s.lessonDates||[]).filter(x=>x!==old.slice(0,10)); s.lessonDates.push(old.slice(0,10)); s.lessonDates.sort();
+  }
+  s.nextLesson = nl;
+  s.reviewDay = Number(document.getElementById('setReviewDay').value);
+  s.capEarly = Math.max(20, Number(document.getElementById('setCapEarly').value)||90);
+  s.capNormal = Math.max(20, Number(document.getElementById('setCapNormal').value)||60);
+  s.quota = {hsk:Math.max(0,Number(document.getElementById('setQHsk').value)||0), vocab:Math.max(0,Number(document.getElementById('setQVocab').value)||0), expr:Math.max(0,Number(document.getElementById('setQExpr').value)||0)};
+  await setSettings(s);
+  closeModal();
+  toast('설정을 저장했어요');
+  renderHome();
+}
+async function rebuildPlan(){
+  await sSet('srs-plan', null);
+  closeModal();
+  toast('오늘 계획을 다시 만들었어요');
+  renderHome();
+}
+
+/* ---- 추가(가져오기) 시 필수 암기 등록 ---- */
+function importReqSelectHTML(){
+  return `<label class="field-label" style="margin-top:10px;">이번 주 필수 암기로 등록</label>
+    <select id="importReq" style="margin-bottom:4px;">
+      <option value="tw">이번 주 신규 (오늘 수업 분량)</option>
+      <option value="missed">지난주 놓친 것 (틀렸거나 등록을 놓친 것)</option>
+      <option value="none">필수 아님 (일반 카드)</option>
+    </select>
+    <div class="sub">필수로 등록하면 서로 다른 날 2번 맞힐 때까지 매일 나와요. 이미 있는 카드는 새로 만들지 않고 필수로만 표시해요.</div>`;
+}
+async function submitImport(deck){
+  const text = document.getElementById('importText').value.trim();
+  if(!text){ toast('내용을 입력해주세요'); return; }
+  const wantStar = document.getElementById('importStar').checked;
+  const reqSel = document.getElementById('importReq');
+  const reqKind = reqSel ? reqSel.value : 'none';
+  const level = deck==='hsk' ? (document.getElementById('importLevel').value || '2') : null;
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const deckKey = DECK_KEY[deck];
+  const existing = await loadDeck(deckKey);
+  const s = await getSettings();
+  const srs = await getSrs();
+  const newItems = [], dupItems = []; let bad = 0;
+  const pending = [];
+  lines.forEach(line=>{
+    let parts;
+    if(line.includes('|')) parts = line.split('|').map(x=>x.trim());
+    else if(line.includes('\t')) parts = line.split('\t').map(x=>x.trim());
+    else parts = line.split(/\s{2,}/).map(x=>x.trim());
+    if(deck==='hsk'){
+      if(parts.length<3){ bad++; return; }
+      const [han,py,en,ko] = [parts[0], parts[1], parts[2]||'', parts[3]||parts[2]||''];
+      const item = {id:uid('hsk'), no: existing.length+newItems.length+1, han:han.trim(), py:py.trim(), en:en.trim(), ko:ko.trim(), level};
+      existing.push(item); newItems.push(item);
+    } else if(deck==='expr'){
+      if(parts.length<2){ bad++; return; }
+      const [ko,py,book,lesson,group] = parts;
+      const bk = book?Number(book):null, ls = lesson?Number(lesson):null;
+      const hit = existing.concat(pending).find(c=>normAny(c.py)===normAny(py) && (Number(c.book)||0)===(bk||0) && (Number(c.lesson)||0)===(ls||0));
+      if(hit){ dupItems.push(hit); return; }
+      const item = {id:uid('expr'), py:(py||'').trim(), ko:(ko||'').trim(), book:bk, lesson:ls, group: group?group.trim():null};
+      pending.push(item); newItems.push(item);
+    } else {
+      if(parts.length<2){ bad++; return; }
+      const [py,ko] = [parts[0], parts[1]];
+      const hit = existing.concat(pending).find(c=>normVocabPy(c.py)===normVocabPy(py) && c.ko===ko);
+      if(hit){ dupItems.push(hit); return; }
+      const item = {id:uid(deck), py:py.trim(), ko:ko.trim()};
+      pending.push(item); newItems.push(item);
+    }
+  });
+  if(newItems.length===0 && dupItems.length===0){ toast('인식된 줄이 없어요. 형식을 확인해주세요'); return; }
+  if(deck==='expr'){ insertByLesson(existing, pending); }
+  else if(deck==='vocab'){ pending.forEach(x=>existing.push(x)); }
+  await saveDeck(deckKey, existing);
+  if(wantStar){
+    const starred = await getStarredKeys();
+    newItems.concat(dupItems).forEach(item=>starred.push(deck+':'+item.id));
+    await setStarredKeys(Array.from(new Set(starred)));
+  }
+  if(deck!=='hsk' && reqKind!=='none'){
+    const cycle = reqKind==='tw' ? (lastLessonDate(s)||todayStr()) : (prevLessonDate(s)||todayStr());
+    newItems.concat(dupItems).forEach(item=>markReq(srs, deck, item.id, reqKind, cycle));
+    await setSrs(srs);
+  }
+  closeModal();
+  const parts = [];
+  if(newItems.length) parts.push(newItems.length+'개 추가');
+  if(dupItems.length) parts.push('이미 있는 '+dupItems.length+'개'+(reqKind!=='none'&&deck!=='hsk'?'는 필수로만 표시':'는 건너뜀'));
+  if(bad) parts.push('인식 안 된 '+bad+'줄');
+  if(reqKind!=='none' && deck!=='hsk') parts.push('필수 암기로 등록');
+  toast(parts.join(' · '));
+  if(deck==='hsk') renderHskTab(); else if(deck==='vocab') renderVocabTab(); else renderExprTab();
+}
+
 /* ---------------- init ---------------- */
 (async function init(){
   await ensureSeed();
-  await checkWeeklyMissionReset();
+  await srsInitV1();
   renderHome();
 })();
 </script>
