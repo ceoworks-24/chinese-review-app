@@ -3592,6 +3592,306 @@ zhe\t~한 채로 있다(동태조사)
 xǐshǒujiān\t화장실
 měitiān\t매일
 yīshēng\t의사`;
+const HSK3_RAW = `1\t阿姨\tāyí\taunt\t아주머니; 이모
+2\t爱好\tàihào\thobby\t취미
+3\t班\tbān\tclass\t반, 조
+4\t办法\tbànfǎ\tmethod\t방법
+5\t办公室\tbàngōngshì\toffice\t사무실
+6\t北方\tběifāng\tnorth\t북방
+7\t鼻子\tbízi\tnose\t코
+8\t比赛\tbǐsài\tcompetition\t시합, 경기
+9\t笔记本\tbǐjìběn\tnotebook\t노트
+10\t变化\tbiànhuà\tchange\t변화
+11\t冰箱\tbīngxiāng\trefrigerator\t냉장고
+12\t菜单\tcàidān\tmenu\t메뉴
+13\t草\tcǎo\tgrass\t풀
+14\t超市\tchāoshì\tsupermarket\t슈퍼마켓
+15\t衬衫\tchènshān\tshirt\t셔츠
+16\t成绩\tchéngjì\tgrade\t성적, 성과
+17\t城市\tchéngshì\tcity\t도시
+18\t船\tchuán\tboat\t배
+19\t春\tchūn\tspring\t봄
+20\t词典\tcídiǎn\tdictionary\t사전
+21\t蛋糕\tdàngāo\tcake\t케익
+22\t灯\tdēng\tlamp\t등, 등불
+23\t地方\tdìfang\tplace\t장소, 곳
+24\t地铁\tdìtiě\tsubway\t지하철
+25\t地图\tdìtú\tmap\t지도
+26\t电梯\tdiàntī\televator\t엘리베이터
+27\t电子邮件\tdiànzǐyóujiàn\temail\t이메일
+28\t东\tdōng\teast\t동, 동쪽
+29\t冬\tdōng\twinter\t겨울
+30\t动物\tdòngwù\tanimal\t동물
+31\t耳朵\těrduo\tear\t귀
+32\t附近\tfùjìn\tnearby\t근처, 부근
+33\t刚才\tgāngcái\tjust now\t방금
+34\t个子\tgèzi\theight\t키
+35\t公园\tgōngyuán\tpark\t공원
+36\t故事\tgùshi\tstory\t이야기
+37\t关系\tguānxì\trelationship\t관계
+38\t国家\tguójiā\tcountry\t국가, 나라
+39\t黑板\thēibǎn\tblackboard\t칠판
+40\t后来\thòulái\tlater\t나중에, 그 후
+41\t护照\thùzhào\tpassport\t여권
+42\t花\thuā\tflower\t꽃
+43\t环境\thuánjìng\tenvironment\t환경
+44\t黄河\thuánghé\tYellow River\t(고유명사)황하
+45\t会议\thuìyì\tmeeting\t회의
+46\t机会\tjīhuì\topportunity\t기회
+47\t季节\tjìjié\tseason\t계절
+48\t健康\tjiànkāng\thealthy\t건강(하다)
+49\t脚\tjiǎo\tfoot\t발
+50\t街道\tjiēdào\tstreet\t큰길, 거리
+51\t节目\tjiémù\tprogram\t프로그램
+52\t节日\tjiérì\tfestival\t명절, 기념일
+53\t经理\tjīnglǐ\tmanager\t사장, 매니저
+54\t句子\tjùzi\tsentence\t문장
+55\t客人\tkèrén\tguest\t손님
+56\t空调\tkōngtiáo\tair conditioner\t에어컨
+57\t口\tkǒu\tmouth; measure word for family members\t명: 입 양: 식구를 세는 단위
+58\t裤子\tkùzi\tpants\t바지
+59\t筷子\tkuàizi\tchopsticks\t젓가락
+60\t礼物\tlǐwù\tgift\t선물
+61\t历史\tlìshǐ\thistory\t역사
+62\t脸\tliǎn\tface\t얼굴
+63\t邻居\tlínjū\tneighbor\t이웃
+64\t楼\tlóu\tbuilding; floor\t명: 건물 양: 층
+65\t马\tmǎ\thorse\t말
+66\t帽子\tmàozi\that\t모자
+67\t米\tmǐ\trice\t쌀
+68\t面包\tmiànbāo\tbread\t빵
+69\t奶奶\tnǎinai\tgrandma\t할머니
+70\t南\tnán\tsouth\t남, 남쪽
+71\t年级\tniánjí\tgrade\t학년
+72\t鸟\tniǎo\tbird\t새
+73\t盘子\tpánzi\tplate\t접시
+74\t啤酒\tpíjiǔ\tbeer\t맥주
+75\t皮鞋\tpíxié\tleather shoes\t가죽구두
+76\t瓶子\tpíngzi\tbottle\t병
+77\t秋\tqiū\tautumn\t가을
+78\t裙子\tqúnzi\tskirt\t치마
+79\t伞\tsǎn\tumbrella\t우산
+80\t声音\tshēngyīn\tsound\t소리
+81\t世界\tshìjiè\tworld\t세계
+82\t叔叔\tshūshu\tuncle\t삼촌; 아저씨
+83\t树\tshù\ttree\t나무
+84\t数学\tshùxué\tmathematics\t수학
+85\t水平\tshuǐpíng\tlevel\t수준
+86\t司机\tsījī\tdriver\t운전기사
+87\t太阳\ttàiyáng\tsun\t태양
+88\t体育\ttǐyù\tsports\t체육
+89\t同事\ttóngshì\tcolleague\t동료
+90\t头发\ttóufa\thair\t머리카락
+91\t图书馆\ttúshūguǎn\tlibrary\t도서관
+92\t腿\ttuǐ\tleg\t다리
+93\t文化\twénhuà\tculture\t문화
+94\t西\txī\twest\t서, 서쪽
+95\t习惯\txíguàn\thabit\t명: 습관 동: 익숙해지다
+96\t洗手间\txǐshǒujiān\trestroom\t화장실
+97\t夏\txià\tsummer\t여름
+98\t先\txiān\tfirst\t먼저
+99\t香蕉\txiāngjiāo\tbanana\t바나나
+100\t校长\txiàozhǎng\tprincipal\t교장
+101\t新闻\txīnwén\tnews\t뉴스
+102\t信用卡\txìnyòngkǎ\tcredit card\t신용카드
+103\t行李箱\txínglixiāng\tsuitcase\t트렁크
+104\t熊猫\txióngmāo\tpanda\t판다
+105\t爷爷\tyéye\tgrandpa\t할아버지
+106\t一会儿\tyíhuìr\ta while; after a while\tV+一会儿: 잠시 一会儿+V: 이따가 ~하다
+107\t以前\tyǐqián\tbefore\t이전, 예전
+108\t音乐\tyīnyuè\tmusic\t음악
+109\t银行\tyínháng\tbank\t은행
+110\t饮料\tyǐnliào\tbeverage\t음료
+111\t游戏\tyóuxì\tgame\t게임
+112\t月亮\tyuèliang\tmoon\t달
+113\t照片\tzhàopiàn\tphoto\t사진
+114\t照相机\tzhàoxiàngjī\tcamera\t카메라
+115\t中间\tzhōngjiān\tmiddle\t중간, 가운데
+116\t中文\tzhōngwén\tChinese\t중국어
+117\t周末\tzhōumò\tweekend\t주말
+118\t自行车\tzìxíngchē\tbicycle\t자전거
+119\t嘴\tzuǐ\tmouth\t입
+120\t最后\tzuìhòu\tlast\t최후, 마지막
+121\t最近\tzuìjìn\trecently\t최근, 요즘
+122\t作业\tzuòyè\thomework\t숙제
+123\t别人\tbiéren\tothers\t다른 사람
+124\t其他\tqítā\tother\t기타, 그 외
+125\t自己\tzìjǐ\toneself\t자기, 스스로
+126\t搬\tbān\tmove\t이동하다, 옮기다
+127\t帮忙\tbāngmáng\thelp\t돕다
+128\t包\tbāo\tbag; wrap\t명: 가방 동: (짐 등을) 싸다
+129\t参加\tcānjiā\tparticipate\t참가하다
+130\t迟到\tchídào\tbe late\t지각하다
+131\t打扫\tdǎsǎo\tto clean\t청소하다
+132\t打算\tdǎsuàn\tto plan\t~할 계획이다
+133\t带\tdài\tto bring\t휴대하다, 인솔하다
+134\t担心\tdānxīn\tto worry\t걱정하다
+135\t锻炼\tduànliàn\tto exercise\t단련하다
+136\t发\tfā\tto send\t보내다/발송하다
+137\t发烧\tfāshāo\tto have a fever\t열이 나다
+138\t发现\tfāxiàn\tto discover\t발견하다
+139\t放\tfàng\tto put\t놓다; 넣다
+140\t放心\tfàngxīn\tdon’t worry\t안심하다
+141\t复习\tfùxí\tto review\t복습하다
+142\t感冒\tgǎnmào\tto catch a cold\t감기에 걸리다
+143\t感兴趣\tgǎnxìngqù\tto be interested in\t~에 흥미를 느끼다
+144\t刮风\tguāfēng\twindy\t바람이 불다
+145\t关\tguān\tto close\t닫다
+146\t关心\tguānxīn\tto care for\t관심을 가지다
+147\t过\tguò\tto pass\t지나다
+148\t过去\tguòqù\tpast\t지나가다
+149\t害怕\thàipà\tto be afraid\t두려워하다
+150\t花\thuā\tto spend\t(시간, 돈을) 쓰다
+151\t画\thuà\tto draw\t명: 그림 동: 그리다
+152\t欢迎\thuānyíng\twelcome\t환영하다
+153\t还\thuán\tto return\t돌려주다
+154\t换\thuàn\tto change\t바꾸다
+155\t回答\thuídá\tto answer\t대답하다
+156\t记得\tjìde\tto remember\t기억하다
+157\t检查\tjiǎnchá\tto check\t검사하다
+158\t见面\tjiànmiàn\tto meet\t만나다
+159\t讲\tjiǎng\tto speak\t이야기하다, 강의하다
+160\t教\tjiāo\tto teach\t가르치다
+161\t接\tjiē\tto pick up\t(뒤에 사람이 올 때) 마중하다; 연결하다
+162\t结婚\tjiéhūn\tto marry\t결혼하다
+163\t结束\tjiéshù\tto finish\t끝나다, 마치다
+164\t解决\tjiějué\tto solve\t해결하다
+165\t借\tjiè\tto borrow\t빌리다
+166\t经过\tjīngguò\tto pass by\t동: 지나다 개: ~을 통해
+167\t决定\tjuédìng\tto decide\t결정하다
+168\t哭\tkū\tto cry\t울다
+169\t离开\tlíkāi\tto leave\t떠나다
+170\t练习\tliànxí\tto practice\t연습하다
+171\t聊天\tliáotiān\tto chat\t수다떨다
+172\t了解\tliǎojiě\tto understand\t(객관적 사실, 지식 등을)이해하 다
+173\t留学\tliúxué\tto study abroad\t유학하다
+174\t明白\tmíngbai\tto understand\t이해하다, 알다
+175\t拿\tná\tto take\t(손으로) 잡다
+176\t努力\tnǔlì\tto strive\t노력(하다)
+177\t爬山\tpáshān\tto climb a mountain\t등산하다
+178\t骑\tqí\tto ride\t(교통수단을 기마자세로) 타다
+179\t起飞\tqǐfēi\tto take off\t이륙하다
+180\t起床\tqǐchuáng\tto get up\t일어서다
+181\t请假\tqǐngjià\tto ask for leave\t휴가를 신청하다
+182\t认为\trènwéi\tto think\t~인줄 알았다
+183\t上网\tshàngwǎng\tto surf the internet\t인터넷을 하다
+184\t生气\tshēngqì\tto get angry\t화내다
+185\t试\tshì\tto try\t시범삼아 ~하다; 시도하다
+186\t刷牙\tshuāyá\tto brush teeth\t이를 닦다
+187\t提高\ttígāo\tto improve\t향상시키다
+188\t同意\ttóngyì\tto agree\t동의하다
+189\t完成\twánchéng\tto complete\t완성하다
+190\t忘记\twàngjì\tto forget\t잊어버리다
+191\t洗澡\txǐzǎo\tto take a shower\t샤워하다
+192\t相信\txiāngxìn\tto believe\t믿다
+193\t像\txiàng\tto be like\t~와 같다
+194\t小心\txiǎoxīn\tto be careful\t조심하다
+195\t需要\txūyào\tto need\t필요하다
+196\t选择\txuǎnzé\tto choose\t선택(하다)
+197\t要求\tyāoqiú\tto request\t요구(하다)
+198\t应该\tyīnggāi\tshould\t조V: ~해야 한다 부: 아마도
+199\t影响\tyǐngxiǎng\tto influence\t영향(을 미치다)
+200\t用\tyòng\tto use\t사용하다
+201\t遇到\tyùdào\tto encounter\t마주치다
+202\t愿意\tyuànyì\tto be willing\t~하기를 바라다
+203\t站\tzhàn\tto stand\t명: 역 동: 서다
+204\t长\tzhǎng\tto grow\t형: 길다 동: 자라다; (얼굴이) ~ 생기다 명: (어떤 집단의) 수장
+205\t着急\tzháojí\tto worry\t조급해하다
+206\t照顾\tzhàogù\tto look after\t돌보다
+207\t注意\tzhùyì\tto pay attention\t주의하다
+208\t矮\tǎi\tshort\t키가 작다
+209\t安静\tānjìng\tquiet\t조용하다
+210\t饱\tbǎo\tfull\t배부르다
+211\t差\tchà\tpoor\t모자라다; 차이가 나다; 안좋다
+212\t聪明\tcōngming\tclever\t똑똑하다
+213\t当然\tdāngrán\tof course\t당연하다
+214\t短\tduǎn\tshort\t짧다
+215\t饿\tè\thungry\t배고프다
+216\t方便\tfāngbiàn\tconvenient\t편리하다
+217\t干净\tgānjìng\tclean\t깨끗하다
+218\t坏\thuài\tbreak down; corrupt; bad\t(물건): 고장나다 (음식): 상하다 (사람): 나쁘다
+219\t简单\tjiǎndān\tsimple\t간단하다
+220\t久\tjiǔ\ta long time\t오랜 시간
+221\t旧\tjiù\told\t낡다
+222\t可爱\tkě’ài\tcute\t귀엽다
+223\t渴\tkě\tthirsty\t목마르다
+224\t蓝\tlán\tblue\t파란(색)
+225\t老\tlǎo\told\t늙다
+226\t绿\tlǜ\tgreen\t녹색
+227\t满意\tmǎnyì\tsatisfied\t만족하다
+228\t难\tnán\tdifficult\t어렵다
+229\t难过\tnánguò\tsad\t괴롭다
+230\t年轻\tniánqīng\tyoung\t젊다
+231\t胖\tpàng\tfat\t뚱뚱하다
+232\t奇怪\tqíguài\tstrange\t이상하다
+233\t清楚\tqīngchu\tclear\t명확하다
+234\t热情\trèqíng\tenthusiasm; kind\t명: 열정 형: 친절하다
+235\t认真\trènzhēn\t(study, work)hard, serious\t성실하다; 진지하다
+236\t容易\tróngyì\teasy\t쉽다
+237\t瘦\tshòu\tthin\t마르다
+238\t舒服\tshūfu\tcomfortable\t편안하다
+239\t疼\tténg\tpainful\t아프다
+240\t甜\ttián\tsweet\t달다
+241\t新鲜\txīnxiān\tfresh\t신선하다
+242\t一般\tyìbān\tgenerally; normal\t부: 보통 형: 일반적이다
+243\t一样\tyíyàng\tsame\t같다
+244\t有名\tyǒumíng\tfamous\t유명하다
+245\t重要\tzhòngyào\timportant\t중요하다
+246\t主要\tzhǔyào\tmaily; main\t부: 주로 형: 주요한
+247\t比较\tbǐjiào\tto compare\t비교적
+248\t必须\tbìxū\tmust\t반드시
+249\t多么\tduōme\thow\t얼마나
+250\t更\tgèng\tmore\t더, 더욱
+251\t还是\tháishì\tstill; would better to do\t아직; ~하는 편이 좋다; (의문문) 아니면
+252\t或者\thuòzhě\tor\t또는
+253\t几乎\tjīhū\talmost\t거의
+254\t极\tjí\textremely\t매우
+255\t经常\tjīngcháng\toften\t자주
+256\t马上\tmǎshàng\timmediately\t바로, 곧
+257\t其实\tqíshí\tactually\t사실은
+258\t特别\ttèbié\tspecial; very\t형: 특별하다 부: 매우, 특히
+259\t突然\ttūrán\tsuddenly\t갑자기
+260\t一定\tyídìng\tdefinitely\t반드시
+261\t一共\tyígòng\taltogether\t모두 합쳐서
+262\t一直\tyìzhí\tcontinuously\t줄곧
+263\t又\tyòu\tagain\t또, 다시(반복)
+264\t越\tyuè\tthe more\t갈수록 ~하다
+265\t只\tzhǐ\tonly\t오직
+266\t终于\tzhōngyú\tfinally\t드디어
+267\t总是\tzǒngshì\talways\t언제나, 항상, 늘
+268\t半\tbàn\thalf\t반, 절반
+269\t万\twàn\tten thousand\t만, 10000
+270\t层\tcéng\tlayer\t층
+271\t段\tduàn\tsection\t단락
+272\t分\tfēn\tminute; cent\t분(시간); 전(화폐단위)
+273\t公斤\tgōngjīn\tkilogram\t킬로그램
+274\t角\tjiǎo\t10 cents\t십전(화폐단위)
+275\t刻\tkè\tquarter hour\t15분
+276\t辆\tliàng\tmeasure word for vehicles\t양: 차를 세는 단위
+277\t双\tshuāng\tpair\t쌍, 켤레
+278\t条\ttiáo\tmeasure word for long, narrow things\t양: 가늘고 긴 것을 세는 단위
+279\t碗\twǎn\tbowl\t명, 양: 그릇
+280\t位\twèi\tmeasure word for people\t분(사람존칭)
+281\t元\tyuán\tyuan\t위안(화폐단위)
+282\t张\tzhāng\tmeasure word for flat objects\t양: 장(얇고 평평한 것을 세는 단위)
+283\t只\tzhī\tmeasure word for animals\t마리, 척
+284\t种\tzhǒng\tkind\t종, 종류
+285\t把\tbǎ\tparticle to shift object; to hold\t개: 목적어를 동사 앞으로 끌어오 는 역할
+286\t被\tbèi\tby (passive marker)\t개: 수동태를 만들어 주는 역할
+287\t除了（~ 以 外）\tchúle\texcept for\t~을 제외하고
+288\t根据\tgēnjù\taccording to\t~에 근거해서
+289\t跟\tgēn\twith\t~와/과; ~한테
+290\t关于\tguānyú\tabout\t~에 관하여
+291\t为\twèi\tfor\t~에게, ~에 대해
+292\t为了\twèile\tin order to\t~을 위해
+293\t向\txiàng\ttowards\t~을 향해; (뒤에 사람이 올때)~에 게
+294\t啊\ta\tah\t감탄을 나타내는 조사
+295\t地\tde\tparticle forming adverbial\t~하게, ~히(형용사+地)
+296\t不但～而且～\tbùdàn…érqiě…\tnot only…but also…\t~할 뿐만 아니라 게다가~ 하다
+297\t然后\tránhòu\tthen\t그런 후에
+298\t如果\trúguǒ\tif\t만약
+299\t一边～一边～\tyìbiān…yìbiān…\twhile doing…\t~하면서 ~하다
+300\t只有～才～\tzhǐyǒu…cái…\tonly if… then…\t오직 ~해야만 비로소 ~하다`;   // HSK 3급 한자 (PDF 번호 그대로 300개)
 
 /* ---- 저장소 ---- */
 async function getSrs(){ return (await sGet('srs')) || {}; }
@@ -3869,6 +4169,13 @@ function insertByLesson(deck, items){
 }
 function parseExprRaw(raw){
   return raw.trim().split('\n').map(line=>{ const [ko,py,book,lesson,group]=line.split('\t'); return {ko,py,book:Number(book),lesson:Number(lesson),group}; });
+}
+async function syncHsk3V1(){
+  const hsk = await loadDeck('hsk-words');
+  const have = new Set(hsk.filter(c=>String(c.level)==='3').map(c=>Number(c.no)));
+  const add = parseHSKSeed(HSK3_RAW, '3').filter(c=>!have.has(c.no));   // 이미 들어간 번호는 건너뛰고 빠진 것만 추가
+  if(add.length===0) return;
+  await saveDeck('hsk-words', hsk.concat(add));
 }
 async function srsInitV1(){
   if(await sGet('srs-init-v1')) return;
@@ -4338,6 +4645,7 @@ async function submitImport(deck){
 /* ---------------- init ---------------- */
 (async function init(){
   await ensureSeed();
+  await syncHsk3V1();
   await srsInitV1();
   renderHome();
 })();
