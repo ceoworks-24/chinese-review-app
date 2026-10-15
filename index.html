@@ -3469,6 +3469,8 @@ async function rateCard(rating){
       await setClearedMission(cleared);
     } else if(review.mode==='m2'){
       await m2Record(review.deck, card.id, true);
+    } else if(review.mode==='m2make'){
+      await m2Record(review.deck, card.id, true, review.makeDate);
     } else if(review.mode==='m2redo'){
       /* 일일 미션 다시 하기: 연습이라 아무 기록도 남기지 않아요 */
     } else if(review.mode==='today' || review.mode==='revday'){
@@ -3482,6 +3484,7 @@ async function rateCard(rating){
   } else {
     if(review.mode==='today' || review.mode==='revday') await srsRate(card._deck||review.deck, card.id, false);
     if(review.mode==='m2') await m2Record(review.deck, card.id, false);
+    if(review.mode==='m2make') await m2Record(review.deck, card.id, false, review.makeDate);
     review.queue.push(card);
   }
   review.index++;
@@ -4777,6 +4780,14 @@ async function m2EnsurePlan(force){
   const ranges = {}; for(const d of M2_DECKS) ranges[d] = await m2GetRange(d);
   const sig = 'p3|'+cycle+'|'+M2_DECKS.map(d=>{ const r=ranges[d]; return r?(r.cycle+':'+(r.new||[]).length+':'+(r.old||[]).length+':'+(r.at||'')):'-'; }).join('|');
   let plan = await sGet('m2-plan');
+  // 지난 날 미션을 날짜별로 보관 (나중에 그날 것을 만회할 수 있게)
+  const dayLog = (await sGet('m2-days')) || {};
+  if(plan && plan.date && plan.date!==t && !dayLog[plan.date]){
+    const dr = await sGet('m2-done');
+    dayLog[plan.date] = {cycle:plan.cycle, decks:plan.decks, done:(dr && dr.date===plan.date) ? dr.keys : []};
+    await sSet('m2-days', dayLog);
+  }
+  if(await sGet('m2-replan')){ force = true; await sSet('m2-replan', false); }
   if(!force && plan && plan.date===t && plan.sig===sig) return {plan, decks, s, ranges};
   const prog = await m2GetProg(cycle);
   const dn = await m2GetDone();
@@ -4786,17 +4797,20 @@ async function m2EnsurePlan(force){
     plan.decks[d] = m2LessonOk(s) ? m2BuildDeckPlan(d, decks[d], ranges[d], prog, s, doneToday) : null;
   }
   await sSet('m2-plan', plan);
+  const dl = (await sGet('m2-days')) || {};
+  dl[t] = {cycle, decks:plan.decks, done:(dl[t] && dl[t].done) || Array.from(doneToday)};
+  await sSet('m2-days', dl);
   return {plan, decks, s, ranges};
 }
 
 /* 정답/오답 기록 */
-async function m2Record(deck, id, good){
+async function m2Record(deck, id, good, makeDate){
   const s = await getSettings();
-  const t = todayStr();
+  const t = makeDate || todayStr();
   const prog = await m2GetProg(m2Cycle(s));
   const key = deck+':'+id;
   const e = prog.cards[key] || {};
-  if(!e.first) e.first = t;
+  if(!e.first || t < e.first) e.first = t;
   const range = await m2GetRange(deck);
   const isNew = range && (range.new||[]).includes(id);
   if(good){
@@ -4811,16 +4825,68 @@ async function m2Record(deck, id, good){
       const need = Math.min(3, (e.wrong||[]).length);
       if(e.okDays.length >= need){ e.lastWrongOpen = null; e.okDays = []; }
     }
-    const done = await m2GetDone();
-    if(!done.keys.includes(key)) done.keys.push(key);
-    await sSet('m2-done', done);
+    if(makeDate){ await m2MarkMadeUp(makeDate, key); }
+    else {
+      const done = await m2GetDone();
+      if(!done.keys.includes(key)) done.keys.push(key);
+      await sSet('m2-done', done);
+      const dl = (await sGet('m2-days')) || {};
+      if(dl[t]){ if(!dl[t].done.includes(key)) dl[t].done.push(key); await sSet('m2-days', dl); }
+    }
   } else {
     e.wrong = Array.from(new Set((e.wrong||[]).concat([t])));
-    e.lastWrongOpen = t;                                                   // 내일 한 번 더
+    if(!e.lastWrongOpen || e.lastWrongOpen < t) e.lastWrongOpen = t;       // 내일 한 번 더
     e.okDays = [];                                                         // 연속 정답 기록은 처음부터
   }
   prog.cards[key] = e;
   await sSet('m2-prog', prog);
+}
+
+/* ---- 지난 날 만회 ---- */
+async function m2MarkMadeUp(ds, key){
+  const dl = (await sGet('m2-days')) || {};
+  const day = dl[ds]; if(!day) return;
+  if(!day.done.includes(key)) day.done.push(key);
+  await sSet('m2-days', dl);
+  const all = M2_DECKS.every(d=>(day.decks[d]||[]).every(id=>day.done.includes(d+':'+id)));
+  const hist = (await sGet('m2-hist')) || {};
+  hist[ds] = {total:(hist[ds]&&hist[ds].total)||1, done:all};
+  await sSet('m2-hist', hist);
+  if(all){ const log = (await sGet('mission-completion-log')) || {}; log[ds] = true; await sSet('mission-completion-log', log); }
+  await sSet('m2-replan', true);                                        // 오늘 미션을 다시 계산 (만회한 만큼 줄어요)
+}
+async function m2OpenMakeup(ds){
+  const dl = (await sGet('m2-days')) || {};
+  const day = dl[ds];
+  const s = await getSettings();
+  if(!day || day.cycle!==m2Cycle(s)){ toast('이 날은 만회할 수 있는 기록이 없어요'); return; }
+  const rows = M2_DECKS.map(d=>{
+    const left = (day.decks[d]||[]).filter(id=>!day.done.includes(d+':'+id)).length;
+    return left>0 ? `<button class="primary" style="width:100%;margin-bottom:8px;" onclick="closeModal();setTimeout(()=>m2StartMakeup('${ds}','${d}'),50)">${M2_ICON[d]} ${M2_NAME[d]} ${left}개 만회하기</button>`
+                  : `<div class="sub" style="text-align:center;margin-bottom:8px;">${M2_ICON[d]} ${M2_NAME[d]} ✓</div>`;
+  }).join('');
+  const [y,m,dd] = ds.split('-');
+  document.getElementById('modalContent').innerHTML = `
+    <h3>${Number(m)}/${Number(dd)} 미션 만회</h3>
+    <div class="sub" style="margin-bottom:12px;">그날 못 한 것만 나와요. 다 하면 그날이 ✓로 바뀌어요.</div>
+    ${rows}
+    <button class="ghost" style="width:100%;" onclick="closeModal()">닫기</button>`;
+  document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
+}
+async function m2StartMakeup(ds, deck){
+  const dl = (await sGet('m2-days')) || {};
+  const day = dl[ds]; if(!day) return;
+  const decks = await loadAllDecks();
+  const byId = new Map(decks[deck].map(c=>[c.id,c]));
+  let list = (day.decks[deck]||[]).filter(id=>!day.done.includes(deck+':'+id)).map(id=>byId.get(id)).filter(Boolean).map(c=>({...c, _key:deck+':'+c.id}));
+  if(list.length===0){ toast('이미 다 했어요'); return; }
+  list = deck==='expr' ? orderExprByGroup(list, decks[deck]) : shuffle(list);
+  const starred = new Set(await getStarredKeys());
+  review = {deck, queue:list, index:0, stage:'question', starred, mode:'m2make', makeDate:ds};
+  document.getElementById('reviewOverlay').classList.add('active');
+  pushOverlayState();
+  renderReviewStep();
 }
 
 async function m2StartMission(deck){
@@ -5088,7 +5154,8 @@ async function renderHome(){
     if(ds===t){ mark = (h&&h.done)?'✓':'●'; if(h&&h.done){ bg='var(--jade)'; col='#fff'; } else { bd='2px solid var(--seal)'; col='var(--seal)'; } }
     else if(ds<t){ if(h&&h.done){ mark='✓'; bg='var(--jade)'; col='#fff'; } else if(h&&h.total>0){ mark='✗'; bg='#FCE9E9'; col='var(--seal)'; } else { mark='–'; } }
     else { bd='1px dashed var(--line)'; }
-    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="font-size:11px;color:${ds===t?'var(--seal)':'var(--ink-soft)'};font-weight:${ds===t?700:400};">${lb}</span>
+    const canMake = ds<t && h && h.total>0 && !h.done;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;${canMake?'cursor:pointer;':''}" ${canMake?`onclick="m2OpenMakeup('${ds}')"`:''}><span style="font-size:11px;color:${ds===t?'var(--seal)':'var(--ink-soft)'};font-weight:${ds===t?700:400};">${lb}</span>
       <div style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;background:${bg};color:${col};border:${bd};">${mark}</div></div>`;
   }).join('');
 
@@ -5117,7 +5184,7 @@ async function renderHome(){
       ${allDone ? `<div style="background:#E8F3EC;color:var(--jade);font-weight:700;text-align:center;padding:10px;border-radius:8px;">🎉 오늘 완료! 이대로만 하면 돼요</div>`
                 : `<div class="hstack">${todayLine}</div>`}
       <div class="hstack" style="justify-content:space-between;margin-top:12px;">${week}</div>
-      ${missed?`<div class="sub" style="margin-top:8px;color:var(--seal);">⚠️ 어제 미션이 빠져서, 남은 날 하루 양이 조금 늘었어요.</div>`:''}
+      ${missed?`<div class="sub" style="margin-top:8px;color:var(--seal);">⚠️ 어제 미션이 빠져서, 남은 날 하루 양이 조금 늘었어요. ✗를 누르면 그날 것을 만회할 수 있어요.</div>`:''}
       ${unset.length?`<div class="sub" style="margin-top:8px;color:var(--seal);">⚠️ ${unset.map(d=>M2_NAME[d]).join('·')} 범위를 아직 안 정했어요 — 카드의 '일일 미션'을 눌러 정해주세요.</div>`:''}
       ${lessonOk && t>=m2Eve(s)?`<div class="sub" style="margin-top:8px;">📝 오늘은 과외 전날이에요. 남은 것과 이번 주에 틀렸던 것이 모두 나와요.</div>`:''}
     </div>`;
