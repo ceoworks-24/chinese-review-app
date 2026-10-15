@@ -3466,6 +3466,8 @@ async function rateCard(rating){
       const cleared = await getClearedMission();
       if(!cleared.includes(card._key)) cleared.push(card._key);
       await setClearedMission(cleared);
+    } else if(review.mode==='m2'){
+      await m2Record(review.deck, card.id, true);
     } else if(review.mode==='today' || review.mode==='revday'){
       await srsRate(card._deck||review.deck, card.id, true);
     } else {
@@ -3476,6 +3478,7 @@ async function rateCard(rating){
     }
   } else {
     if(review.mode==='today' || review.mode==='revday') await srsRate(card._deck||review.deck, card.id, false);
+    if(review.mode==='m2') await m2Record(review.deck, card.id, false);
     review.queue.push(card);
   }
   review.index++;
@@ -4442,7 +4445,7 @@ function todayRowHTML(deck, left, total){
     <button class="${done?'ghost':'primary'} small" ${(done)?'disabled':''} onclick="startToday('${deck}')">${done?'완료':'시작'}</button>
   </div>`;
 }
-async function renderHome(){
+async function renderHomeOld(){
   const el = document.getElementById('view-home');
   el.innerHTML = '<div class="empty">불러오는 중…</div>';
   const [decks, srs, s, starredArr, cleared, clearedStarredArr, rawScope, rangeSet] = await Promise.all([
@@ -4656,12 +4659,404 @@ async function submitImport(deck){
   if(deck==='hsk') renderHskTab(); else if(deck==='vocab') renderVocabTab(); else renderExprTab();
 }
 
+/* =====================================================================
+   일일 미션 v2 (2026-10-15 단순화)
+   - 과외가 끝나면 '다음 과외 날짜·시간'을 입력 → 그 날짜가 이번 주기(cycle)
+   - 카드(한자/단어/표현)마다 '이번 주 새 분량'과 '예전 복습' 범위를 직접 고름
+   - 앱이 과외 전날까지 남은 날로 나눠 매일 미션을 만듦 (빠진 날이 있으면 남은 날로 다시 나눔)
+   - 새 분량: 서로 다른 날 2번 맞혀야 끝 / 예전 복습: 한 바퀴
+   - 틀린 문제: 그 자리에서 맨 끝에 다시 → 다음 날 한 번 더 → 과외 전날 이번 주 틀린 것 전부 다시
+   ===================================================================== */
+const M2_DECKS = ['hsk','vocab','expr'];
+const M2_NAME = {hsk:'한자', vocab:'단어', expr:'표현'};
+const M2_ICON = {hsk:'✍️', vocab:'📖', expr:'💬'};
+
+function m2Cycle(s){ return s.nextLesson || ''; }
+function m2LessonDate(s){ return s.nextLesson ? s.nextLesson.slice(0,10) : null; }
+function m2LessonOk(s){ const d = m2LessonDate(s); return !!(d && d > todayStr()); }
+function m2Eve(s){ return addDays(m2LessonDate(s), -1); }
+function m2FmtLesson(s){
+  const d = new Date(s.nextLesson);
+  const W = ['일','월','화','수','목','금','토'];
+  let h = d.getHours(), m = d.getMinutes();
+  const ap = h<12 ? '오전' : '오후'; let hh = h%12; if(hh===0) hh=12;
+  return (d.getMonth()+1)+'/'+d.getDate()+'('+W[d.getDay()]+') '+ap+' '+hh+'시'+(m?(' '+m+'분'):'');
+}
+
+async function m2GetRange(deck){ return (await sGet('m2-range-'+deck)) || null; }
+async function m2GetProg(cycle){
+  const p = await sGet('m2-prog');
+  if(!p || p.cycle!==cycle) return {cycle, cards:{}};
+  return p;
+}
+async function m2GetDone(){
+  const d = await sGet('m2-done');
+  if(!d || d.date!==todayStr()) return {date:todayStr(), keys:[]};
+  return d;
+}
+
+/* 표현은 그룹(권-과-그룹)이 쪼개지지 않게 앞에서부터 묶음 단위로 자름 */
+function m2TakeChunk(deck, cards, n){
+  if(n<=0) return [];
+  if(deck!=='expr') return cards.slice(0, n);
+  const out = []; let i = 0;
+  while(i<cards.length && out.length<n){
+    const g = (cards[i].book??'')+'-'+(cards[i].lesson??'')+'-'+(cards[i].group||'');
+    while(i<cards.length && ((cards[i].book??'')+'-'+(cards[i].lesson??'')+'-'+(cards[i].group||''))===g){ out.push(cards[i]); i++; }
+  }
+  return out;
+}
+
+/* 오늘 미션 계산 (하루에 한 번 만들고, 범위를 바꾸면 다시 만듦) */
+function m2BuildDeckPlan(deck, deckCards, range, prog, s){
+  const t = todayStr();
+  if(!range || range.cycle!==m2Cycle(s)) return null;           // 이번 주기 범위를 아직 안 정함
+  const isNew = new Set(range.new||[]), isOld = new Set(range.old||[]);
+  const P = k=>prog.cards[k] || {};
+  const inRange = deckCards.filter(c=>isNew.has(c.id) || isOld.has(c.id));
+  const eve = m2Eve(s);
+  const D = Math.max(1, diffDays(t, eve)+1);
+  const retry = [], second = [], fresh = [], oldPend = [], wrongAll = [];
+  inRange.forEach(c=>{
+    const e = P(deck+':'+c.id);
+    if(e.lastWrongOpen && e.lastWrongOpen < t) retry.push(c);
+    if((e.wrong||[]).length) wrongAll.push(c);
+    if(isNew.has(c.id)){
+      const days = e.days||[];
+      if(days.length===0) fresh.push(c);
+      else if(days.length===1 && days[0] < t) second.push(c);
+    } else if(!e.cleared){ oldPend.push(c); }
+  });
+  let pick;
+  if(t >= eve){
+    // 과외 전날: 남은 것 전부 + 이번 주에 한 번이라도 틀린 것 전부
+    pick = [].concat(retry, second, fresh, oldPend, wrongAll);
+  } else {
+    const freshQ = D>1 ? Math.ceil(fresh.length/(D-1)) : fresh.length;   // 새 것은 하루 전까지 한 번씩 보게
+    const oldQ = Math.ceil(oldPend.length/D);
+    pick = [].concat(retry, second, m2TakeChunk(deck, fresh, freshQ), m2TakeChunk(deck, oldPend, oldQ));
+  }
+  const seen = new Set(), ids = [];
+  pick.forEach(c=>{ if(!seen.has(c.id)){ seen.add(c.id); ids.push(c.id); } });
+  // 카드 원래 순서대로 정렬 (표현 그룹 순서 유지용)
+  const order = new Map(deckCards.map((c,i)=>[c.id,i]));
+  ids.sort((a,b)=>order.get(a)-order.get(b));
+  return ids;
+}
+async function m2EnsurePlan(force){
+  const [decks, s] = await Promise.all([loadAllDecks(), getSettings()]);
+  const t = todayStr();
+  const cycle = m2Cycle(s);
+  const ranges = {}; for(const d of M2_DECKS) ranges[d] = await m2GetRange(d);
+  const sig = cycle+'|'+M2_DECKS.map(d=>{ const r=ranges[d]; return r?(r.cycle+':'+(r.new||[]).length+':'+(r.old||[]).length+':'+(r.at||'')):'-'; }).join('|');
+  let plan = await sGet('m2-plan');
+  if(!force && plan && plan.date===t && plan.sig===sig) return {plan, decks, s, ranges};
+  const prog = await m2GetProg(cycle);
+  plan = {date:t, sig, decks:{}};
+  for(const d of M2_DECKS){
+    plan.decks[d] = m2LessonOk(s) ? m2BuildDeckPlan(d, decks[d], ranges[d], prog, s) : null;
+  }
+  await sSet('m2-plan', plan);
+  return {plan, decks, s, ranges};
+}
+
+/* 정답/오답 기록 */
+async function m2Record(deck, id, good){
+  const s = await getSettings();
+  const t = todayStr();
+  const prog = await m2GetProg(m2Cycle(s));
+  const key = deck+':'+id;
+  const e = prog.cards[key] || {};
+  const range = await m2GetRange(deck);
+  const isNew = range && (range.new||[]).includes(id);
+  if(good){
+    const wrongToday = (e.wrong||[]).includes(t);
+    if(!wrongToday){
+      if(isNew){ e.days = Array.from(new Set((e.days||[]).concat([t]))); }
+      else { e.cleared = true; }
+    }
+    if(e.lastWrongOpen && e.lastWrongOpen < t) e.lastWrongOpen = null;   // 어제 틀린 걸 오늘 맞힘
+    const done = await m2GetDone();
+    if(!done.keys.includes(key)) done.keys.push(key);
+    await sSet('m2-done', done);
+  } else {
+    e.wrong = Array.from(new Set((e.wrong||[]).concat([t])));
+    e.lastWrongOpen = t;                                                   // 내일 한 번 더
+  }
+  prog.cards[key] = e;
+  await sSet('m2-prog', prog);
+}
+
+async function m2StartMission(deck){
+  const {plan, decks, s, ranges} = await m2EnsurePlan();
+  if(!m2LessonOk(s)){ m2OpenLesson(); return; }
+  if(!ranges[deck] || ranges[deck].cycle!==m2Cycle(s)){ m2OpenRange(deck); return; }
+  const done = new Set((await m2GetDone()).keys);
+  const ids = (plan.decks[deck]||[]).filter(id=>!done.has(deck+':'+id));
+  if(ids.length===0){ toast(M2_NAME[deck]+' 오늘 미션을 모두 끝냈어요 ✓'); return; }
+  const byId = new Map(decks[deck].map(c=>[c.id,c]));
+  let list = ids.map(id=>byId.get(id)).filter(Boolean).map(c=>({...c, _key:deck+':'+c.id}));
+  list = deck==='expr' ? orderExprByGroup(list, decks[deck]) : shuffle(list);
+  const starred = new Set(await getStarredKeys());
+  review = {deck, queue:list, index:0, stage:'question', starred, mode:'m2'};
+  document.getElementById('reviewOverlay').classList.add('active');
+  pushOverlayState();
+  renderReviewStep();
+}
+
+/* ---- 과외 날짜 입력 ---- */
+async function m2OpenLesson(){
+  const s = await getSettings();
+  const ok = m2LessonOk(s);
+  const nl = ok ? s.nextLesson : '';
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <h3>📅 다음 과외 날짜</h3>
+    ${ok?'':`<div class="hint" style="background:#FCE9E9;">${s.nextLesson?'입력된 과외 시간이 지났어요. ':''}다음 과외 날짜와 시간을 입력해야 일일 미션이 만들어져요.</div>`}
+    <div class="hstack" style="margin:10px 0;">
+      <input type="date" id="m2LessonDate" value="${esc(nl.slice(0,10))}">
+      <input type="time" id="m2LessonTime" value="${esc(nl.slice(11,16)||'10:00')}">
+    </div>
+    <div class="sub" style="margin-bottom:10px;">날짜를 바꾸면 새 주기가 시작돼요. 그다음 카드마다 '일일 미션'을 눌러 이번 주 범위를 정해주세요.</div>
+    <div class="hstack">
+      <button class="ghost" style="flex:1;" onclick="closeModal()">닫기</button>
+      <button class="primary" style="flex:1;" onclick="m2SaveLesson()">저장</button>
+    </div>`;
+  document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
+}
+async function m2SaveLesson(){
+  const d = document.getElementById('m2LessonDate').value;
+  const tm = document.getElementById('m2LessonTime').value || '10:00';
+  if(!d){ toast('날짜를 입력해주세요'); return; }
+  if(d <= todayStr()){ toast('오늘 이후 날짜를 입력해주세요'); return; }
+  const s = await getSettings();
+  s.nextLesson = d+'T'+tm;
+  await setSettings(s);
+  await sSet('m2-plan', null);
+  closeModal();
+  toast('다음 과외를 저장했어요. 카드마다 이번 주 범위를 정해주세요');
+  renderHome();
+}
+
+/* ---- 일일 미션 범위 고르기 ---- */
+function m2GroupOf(deck, c, idx){
+  if(deck==='hsk') return {k:'L'+c.level, label:c.level+'급'};
+  if(deck==='expr') return {k:'B'+c.book+'-'+c.lesson, label:c.book+'권 '+c.lesson+'과'};
+  const b = Math.floor(idx/50); return {k:'V'+b, label:(b*50+1)+'~'+(b*50+50)+'번'};
+}
+async function m2OpenRange(deck){
+  const [cards, s, prev] = await Promise.all([loadDeck(DECK_KEY[deck]), getSettings(), m2GetRange(deck)]);
+  if(!m2LessonOk(s)){ m2OpenLesson(); return; }
+  let sel;
+  if(prev && prev.cycle===m2Cycle(s)) sel = {new:new Set(prev.new||[]), old:new Set(prev.old||[])};
+  else if(prev) sel = {new:new Set(), old:new Set([].concat(prev.old||[], prev.new||[]))};   // 지난 주기 '새 분량'은 이번엔 복습 쪽으로
+  else sel = {new:new Set(), old:new Set()};
+  const items = cards.map((c,i)=>({c, i, g:m2GroupOf(deck,c,i)}));
+  const groups = []; const gmap = {};
+  items.forEach(it=>{ if(!gmap[it.g.k]){ gmap[it.g.k]={k:it.g.k,label:it.g.label,items:[]}; groups.push(gmap[it.g.k]); } gmap[it.g.k].items.push(it); });
+  window._m2r = {deck, cards, sel, tab:'new', groups, open:new Set(), carried: !!(prev && prev.cycle!==m2Cycle(s))};
+  m2RenderRange();
+  document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
+}
+function m2ItemLabel(deck, it){
+  const c = it.c;
+  if(deck==='hsk') return `<span style="color:var(--ink-soft);font-size:12px;min-width:30px;display:inline-block;">${esc(c.no)}.</span><span class="hanzi" style="font-size:15px;margin-right:6px;">${esc(c.han)}</span><span class="sub">${esc(c.ko)}</span>`;
+  if(deck==='vocab') return `<span style="color:var(--ink-soft);font-size:12px;min-width:30px;display:inline-block;">${it.i+1}.</span><span style="font-size:13px;">${esc(c.py)}</span> <span class="sub">${esc(c.ko)}</span>`;
+  return `<span style="font-size:11px;color:var(--gold);margin-right:4px;">${esc(c.group||'')}</span><span style="font-size:13px;">${esc(c.ko)}</span>`;
+}
+function m2RenderRange(){
+  const R = window._m2r, deck = R.deck;
+  const cur = R.sel[R.tab], other = R.sel[R.tab==='new'?'old':'new'];
+  const rangeInput = deck==='hsk'
+    ? `<select id="m2rLv" style="width:auto;">${[...new Set(R.cards.map(c=>String(c.level)))].sort().map(l=>`<option value="${l}">${l}급</option>`).join('')}</select>
+       <input type="number" id="m2rFrom" placeholder="시작" inputmode="numeric" style="width:64px;"><span class="sub">~</span><input type="number" id="m2rTo" placeholder="끝" inputmode="numeric" style="width:64px;">`
+    : deck==='vocab'
+    ? `<input type="number" id="m2rFrom" placeholder="시작 번호" inputmode="numeric" style="width:84px;"><span class="sub">~</span><input type="number" id="m2rTo" placeholder="끝 번호" inputmode="numeric" style="width:84px;">`
+    : `<input type="number" id="m2rFB" placeholder="권" style="width:46px;"><input type="number" id="m2rFL" placeholder="과" style="width:46px;"><span class="sub">~</span><input type="number" id="m2rTB" placeholder="권" style="width:46px;"><input type="number" id="m2rTL" placeholder="과" style="width:46px;">`;
+  const list = R.groups.map(g=>{
+    const ids = g.items.map(it=>it.c.id).filter(id=>!other.has(id));
+    const n = ids.filter(id=>cur.has(id)).length;
+    const open = R.open.has(g.k);
+    return `<div style="border-bottom:1px solid #F0EBDD;padding:6px 0;">
+      <div class="hstack" style="align-items:center;">
+        <input type="checkbox" onchange="m2ToggleGroup('${g.k}',this.checked)" ${ids.length&&n===ids.length?'checked':''} ${ids.length===0?'disabled':''} data-some="${n>0&&n<ids.length?1:0}">
+        <span style="flex:1;font-weight:700;" onclick="m2OpenGroup('${g.k}')">${esc(g.label)} <span class="sub" style="font-weight:400;">${n}/${g.items.length}</span></span>
+        <button type="button" class="ghost small" style="padding:2px 8px;" onclick="m2OpenGroup('${g.k}')">${open?'접기 ▲':'펼치기 ▼'}</button>
+      </div>
+      ${open?`<div style="padding-left:24px;">${g.items.map(it=>{ const id=it.c.id, dis=other.has(id);
+        return `<label class="hstack" style="align-items:center;padding:3px 0;${dis?'opacity:.4;':''}"><input type="checkbox" ${cur.has(id)?'checked':''} ${dis?'disabled':''} onchange="m2ToggleItem('${id}',this.checked)"><span>${m2ItemLabel(deck,it)}${dis?` <span class="sub">(${R.tab==='new'?'예전 복습':'새 분량'})</span>`:''}</span></label>`; }).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+  document.getElementById('modalContent').innerHTML = `
+    <h3>${M2_ICON[deck]} ${M2_NAME[deck]} 일일 미션 범위</h3>
+    ${R.carried?'<div class="hint">새 과외 주기예요. 지난주 범위는 모두 \'예전 복습\'에 넣어뒀어요. 필요 없는 건 빼고, 이번 주 새 분량을 골라주세요.</div>':''}
+    <div class="hstack" style="margin-bottom:8px;">
+      <button type="button" class="${R.tab==='new'?'primary':'ghost'} small" style="flex:1;" onclick="m2Tab('new')">이번 주 새 분량 (${R.sel.new.size})</button>
+      <button type="button" class="${R.tab==='old'?'primary':'ghost'} small" style="flex:1;" onclick="m2Tab('old')">예전 복습 (${R.sel.old.size})</button>
+    </div>
+    <div class="sub" style="margin-bottom:6px;">${R.tab==='new'?'과외 전까지 서로 다른 날 2번 맞혀야 끝나요':'과외 전까지 한 번씩 봐요 (틀린 건 다음 날 다시)'}</div>
+    <div class="hstack" style="flex-wrap:wrap;align-items:center;gap:4px;background:var(--paper-2);padding:8px;border-radius:8px;margin-bottom:8px;">
+      ${rangeInput}<button type="button" class="ghost small" onclick="m2AddRange()">구간 추가</button>
+      <button type="button" class="ghost small" style="color:var(--seal);" onclick="m2ClearTab()">비우기</button>
+    </div>
+    <div style="max-height:300px;overflow-y:auto;border-top:1px solid var(--line);">${list}</div>
+    <div class="hstack" style="margin-top:10px;">
+      <button class="ghost" style="flex:1;" onclick="closeModal()">닫기</button>
+      <button class="primary" style="flex:1;" onclick="m2SaveRange()">저장</button>
+    </div>`;
+  document.querySelectorAll('#modalContent input[data-some="1"]').forEach(cb=>{ cb.indeterminate = true; });
+}
+function m2Tab(t){ window._m2r.tab = t; m2RenderRange(); }
+function m2OpenGroup(k){ const o=window._m2r.open; o.has(k)?o.delete(k):o.add(k); m2RenderRange(); }
+function m2ToggleItem(id, on){ const R=window._m2r; on?R.sel[R.tab].add(id):R.sel[R.tab].delete(id); m2RenderRange(); }
+function m2ToggleGroup(k, on){
+  const R=window._m2r, other=R.sel[R.tab==='new'?'old':'new'];
+  R.groups.find(g=>g.k===k).items.forEach(it=>{ if(other.has(it.c.id)) return; on?R.sel[R.tab].add(it.c.id):R.sel[R.tab].delete(it.c.id); });
+  m2RenderRange();
+}
+function m2ClearTab(){ const R=window._m2r; R.sel[R.tab].clear(); m2RenderRange(); }
+function m2AddRange(){
+  const R=window._m2r, deck=R.deck, other=R.sel[R.tab==='new'?'old':'new'];
+  let hit = [];
+  const v = id=>document.getElementById(id).value;
+  if(deck==='hsk'){
+    const lv=v('m2rLv'), f=Number(v('m2rFrom')), to=Number(v('m2rTo'));
+    if(!f||!to||f>to){ toast('번호를 확인해주세요'); return; }
+    hit = R.cards.filter(c=>String(c.level)===lv && Number(c.no)>=f && Number(c.no)<=to);
+  } else if(deck==='vocab'){
+    const f=Number(v('m2rFrom')), to=Number(v('m2rTo'));
+    if(!f||!to||f>to){ toast('번호를 확인해주세요'); return; }
+    hit = R.cards.filter((c,i)=>i+1>=f && i+1<=to);
+  } else {
+    const fb=v('m2rFB'), fl=v('m2rFL'), tb=v('m2rTB'), tl=v('m2rTL');
+    if(fb===''||fl===''||tb===''||tl===''){ toast('권/과를 모두 입력해주세요'); return; }
+    const from=Number(fb)*1000+Number(fl), to=Number(tb)*1000+Number(tl);
+    hit = R.cards.filter(c=>{ const k=(Number(c.book)||0)*1000+(Number(c.lesson)||0); return k>=from && k<=to; });
+  }
+  hit = hit.filter(c=>!other.has(c.id));
+  if(hit.length===0){ toast('해당 범위에 추가할 게 없어요'); return; }
+  hit.forEach(c=>R.sel[R.tab].add(c.id));
+  toast(hit.length+'개를 '+(R.tab==='new'?'새 분량':'예전 복습')+'에 넣었어요');
+  m2RenderRange();
+}
+async function m2SaveRange(){
+  const R = window._m2r, s = await getSettings();
+  if(R.sel.new.size+R.sel.old.size===0){ toast('최소 1개는 골라주세요'); return; }
+  await sSet('m2-range-'+R.deck, {cycle:m2Cycle(s), new:[...R.sel.new], old:[...R.sel.old], at:Date.now()});
+  closeModal();
+  toast(M2_NAME[R.deck]+' 범위를 저장했어요 — 남은 날짜로 나눠서 미션을 만들었어요');
+  renderHome();
+}
+
+/* ---- 다시하기 (복습 시작 / 즐겨찾기) ---- */
+function m2OpenResetChooser(deck){
+  document.getElementById('modalContent').innerHTML = `
+    <h3>${M2_NAME[deck]} 다시하기</h3>
+    <div class="sub" style="margin-bottom:10px;">다 맞혀서 끝난 걸 처음부터 다시 돌려요. 일일 미션에는 영향이 없어요.</div>
+    <button class="ghost" style="width:100%;margin-bottom:8px;" onclick="openResetProgressConfirm('${deck}')">'복습 시작' 다시하기</button>
+    <button class="ghost" style="width:100%;margin-bottom:8px;" onclick="openResetStarredConfirm('${deck}')">'즐겨찾기' 다시하기</button>
+    <button class="ghost" style="width:100%;" onclick="closeModal()">닫기</button>`;
+  document.getElementById('modalBg').classList.add('active');
+  pushOverlayState();
+}
+
+/* ---- 홈 ---- */
+async function renderHome(){
+  const el = document.getElementById('view-home');
+  const {plan, s, ranges} = await m2EnsurePlan();
+  const t = todayStr();
+  const done = new Set((await m2GetDone()).keys);
+  const lessonOk = m2LessonOk(s);
+  const st = {};
+  let total = 0, left = 0;
+  M2_DECKS.forEach(d=>{
+    const ids = plan.decks[d];
+    if(ids==null){ st[d] = {set:false}; return; }
+    const l = ids.filter(id=>!done.has(d+':'+id)).length;
+    st[d] = {set:true, total:ids.length, left:l};
+    total += ids.length; left += l;
+  });
+  // 날짜별 기록
+  const hist = (await sGet('m2-hist')) || {};
+  if(lessonOk){ hist[t] = {total, done: total>0 && left===0}; await sSet('m2-hist', hist); }
+  let log = (await sGet('mission-completion-log')) || {};
+  if(total>0 && left===0 && !log[t]){ log[t] = true; await sSet('mission-completion-log', log); }
+  const streak = computeStreak(log, wd=>false);
+  const streakEl = document.getElementById('streakDisplay');
+  if(streakEl) streakEl.textContent = '🔥'+streak+'일 연속 성공 중';
+
+  const monday = getMondayDateStr(new Date());
+  const week = MISSION_DAYS.map((lb,i)=>{
+    const ds = addDays(monday, i), h = hist[ds];
+    let mark = '', bg = 'var(--paper-2)', col = 'var(--ink-soft)', bd = '1px solid var(--line)';
+    if(ds===t){ mark = (h&&h.done)?'✓':'●'; if(h&&h.done){ bg='var(--jade)'; col='#fff'; } else { bd='2px solid var(--seal)'; col='var(--seal)'; } }
+    else if(ds<t){ if(h&&h.done){ mark='✓'; bg='var(--jade)'; col='#fff'; } else if(h&&h.total>0){ mark='✗'; bg='#FCE9E9'; col='var(--seal)'; } else { mark='–'; } }
+    else { bd='1px dashed var(--line)'; }
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><span style="font-size:11px;color:${ds===t?'var(--seal)':'var(--ink-soft)'};font-weight:${ds===t?700:400};">${lb}</span>
+      <div style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;background:${bg};color:${col};border:${bd};">${mark}</div></div>`;
+  }).join('');
+
+  const y = hist[addDays(t,-1)];
+  const missed = lessonOk && y && y.total>0 && !y.done;
+  const unset = M2_DECKS.filter(d=>!st[d].set);
+  const todayLine = M2_DECKS.map(d=>{
+    const x = st[d];
+    const txt = !x.set ? '<span class="sub">범위 미설정</span>' : (x.total===0 ? '<span class="sub">오늘 없음</span>' : (x.left===0 ? '<b style="color:var(--jade);">✓</b>' : `<b style="color:var(--seal);">${x.left}개</b> 남음`));
+    return `<div style="flex:1;text-align:center;font-size:13px;">${M2_ICON[d]} ${M2_NAME[d]}<div style="margin-top:2px;">${txt}</div></div>`;
+  }).join('');
+  const allDone = lessonOk && total>0 && left===0;
+
+  const top = !lessonOk ? `
+    <div class="card" style="border-left:5px solid var(--seal);">
+      <div style="font-weight:700;color:var(--seal);margin-bottom:6px;">🚨 다음 과외 날짜를 입력하세요</div>
+      <div class="sub" style="margin-bottom:10px;">${s.nextLesson?'입력된 과외 시간이 지났어요. ':''}날짜를 입력해야 일일 미션이 만들어져요.</div>
+      <button class="primary" style="width:100%;" onclick="m2OpenLesson()">과외 날짜 입력</button>
+    </div>` : `
+    <div class="card">
+      <div class="row-between" style="align-items:center;">
+        <div><b style="font-size:16px;">과외까지 ${diffDays(t, m2LessonDate(s))}일</b> <span class="sub">${esc(m2FmtLesson(s))}</span></div>
+        <button class="ghost small" style="padding:3px 8px;" onclick="m2OpenLesson()">✏️</button>
+      </div>
+      <div style="margin:12px 0 4px;font-weight:700;font-size:13.5px;">오늘</div>
+      ${allDone ? `<div style="background:#E8F3EC;color:var(--jade);font-weight:700;text-align:center;padding:10px;border-radius:8px;">🎉 오늘 완료! 이대로만 하면 돼요</div>`
+                : `<div class="hstack">${todayLine}</div>`}
+      <div class="hstack" style="justify-content:space-between;margin-top:12px;">${week}</div>
+      ${missed?`<div class="sub" style="margin-top:8px;color:var(--seal);">⚠️ 어제 미션이 빠져서, 남은 날 하루 양이 조금 늘었어요.</div>`:''}
+      ${unset.length?`<div class="sub" style="margin-top:8px;color:var(--seal);">⚠️ ${unset.map(d=>M2_NAME[d]).join('·')} 범위를 아직 안 정했어요 — 카드의 '일일 미션'을 눌러 정해주세요.</div>`:''}
+      ${lessonOk && t>=m2Eve(s)?`<div class="sub" style="margin-top:8px;">📝 오늘은 과외 전날이에요. 남은 것과 이번 주에 틀렸던 것이 모두 나와요.</div>`:''}
+    </div>`;
+
+  const card = d=>{
+    const x = st[d], r = ranges[d];
+    const sub = !lessonOk ? '과외 날짜를 먼저 입력하세요' : (!x.set ? '일일 미션 범위를 정해주세요' : (x.total===0 ? '오늘 미션 없음' : (x.left===0 ? '오늘 미션 완료 ✓' : `오늘 미션 ${x.left}개 남음`)));
+    const startFree = d==='hsk' ? 'openReviewScope()' : (d==='expr' ? 'openExprScope()' : "startReview('vocab')");
+    return `<div class="card">
+      <div class="row-between" style="align-items:center;">
+        <div><h3 style="margin:0;">${M2_ICON[d]} ${M2_NAME[d]}</h3><div class="sub" style="${x.set&&x.left>0?'color:var(--seal);':''}">${sub}</div></div>
+        ${x.set?`<a href="#" class="sub" onclick="m2OpenRange('${d}');return false;" style="text-decoration:underline;">범위 (새 ${(r.new||[]).length} · 복습 ${(r.old||[]).length})</a>`:''}
+      </div>
+      <div class="hstack" style="margin-top:10px;gap:6px;">
+        <button class="ghost small" style="flex:1;padding:8px 2px;" onclick="${startFree}">복습 시작</button>
+        <button class="ghost small" style="flex:1;padding:8px 2px;" onclick="m2OpenResetChooser('${d}')">다시하기</button>
+        <button class="ghost small" style="flex:1;padding:8px 2px;" onclick="reviewStarred('${d}')">즐겨찾기</button>
+        <button class="primary small" style="flex:1;padding:8px 2px;" onclick="m2StartMission('${d}')">일일 미션</button>
+      </div>
+    </div>`;
+  };
+  el.innerHTML = top + M2_DECKS.map(card).join('') + `
+    <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button>`;
+}
+
 /* ---------------- init ---------------- */
 (async function init(){
   await ensureSeed();
   await syncHsk3V1();
   await srsInitV1();
-  renderHome();
+  await renderHome();
+  const s0 = await getSettings();
+  if(!m2LessonOk(s0)) m2OpenLesson();   // 과외 날짜가 없거나 지났으면 바로 입력 창
 })();
 </script>
 </body>
