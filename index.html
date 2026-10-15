@@ -4778,13 +4778,19 @@ async function m2Record(deck, id, good){
       if(isNew){ e.days = Array.from(new Set((e.days||[]).concat([t]))); }
       else { e.cleared = true; }
     }
-    if(e.lastWrongOpen && e.lastWrongOpen < t) e.lastWrongOpen = null;   // 어제 틀린 걸 오늘 맞힘
+    if(e.lastWrongOpen && e.lastWrongOpen < t && !wrongToday){
+      // 틀린 날 수만큼 서로 다른 날 연속으로 맞혀야 빠져요 (1번 → 1일, 2번 → 2일, 3번 이상 → 3일)
+      e.okDays = Array.from(new Set((e.okDays||[]).concat([t])));
+      const need = Math.min(3, (e.wrong||[]).length);
+      if(e.okDays.length >= need){ e.lastWrongOpen = null; e.okDays = []; }
+    }
     const done = await m2GetDone();
     if(!done.keys.includes(key)) done.keys.push(key);
     await sSet('m2-done', done);
   } else {
     e.wrong = Array.from(new Set((e.wrong||[]).concat([t])));
     e.lastWrongOpen = t;                                                   // 내일 한 번 더
+    e.okDays = [];                                                         // 연속 정답 기록은 처음부터
   }
   prog.cards[key] = e;
   await sSet('m2-prog', prog);
