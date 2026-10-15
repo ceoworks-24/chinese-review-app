@@ -3428,6 +3428,7 @@ function renderRevealed(card){
   }
   if(review.skipped){
     document.getElementById('reviewFoot').innerHTML = `
+      ${deck==='hsk' ? '<button class="ghost small" style="width:100%;margin-bottom:8px;" onclick="clearInkKeepOverlay()">지우기</button>' : ''}
       <div class="sub" style="text-align:center;margin-bottom:6px;color:var(--seal);">오답으로 기록돼요 — 곧 다시 나와요</div>
       <button class="primary" style="width:100%;" onclick="rateCard('again')">다음</button>
     `;
@@ -4737,7 +4738,13 @@ function m2BuildDeckPlan(deck, deckCards, range, prog, s){
   } else {
     const freshQ = D>1 ? Math.ceil(fresh.length/(D-1)) : fresh.length;   // 새 것은 하루 전까지 한 번씩 보게
     const oldQ = Math.ceil(oldPend.length/D);
-    pick = [].concat(retry, second, m2TakeChunk(deck, fresh, freshQ), m2TakeChunk(deck, oldPend, oldQ));
+    if(deck==='hsk'){
+      // 한자 새 분량은 맞힌 것도 매일 전부 나와요 (순간 기억이 아니라 진짜 암기를 위해)
+      const allNew = inRange.filter(c=>isNew.has(c.id));
+      pick = [].concat(retry, allNew, m2TakeChunk(deck, oldPend, oldQ));
+    } else {
+      pick = [].concat(retry, second, m2TakeChunk(deck, fresh, freshQ), m2TakeChunk(deck, oldPend, oldQ));
+    }
   }
   const seen = new Set(), ids = [];
   pick.forEach(c=>{ if(!seen.has(c.id)){ seen.add(c.id); ids.push(c.id); } });
@@ -4905,6 +4912,8 @@ function m2ItemLabel(deck, it){
 }
 function m2RenderRange(){
   const R = window._m2r, deck = R.deck;
+  const oldList = document.getElementById('m2rList');
+  const keepScroll = oldList ? oldList.scrollTop : 0;
   const cur = R.sel[R.tab], other = R.sel[R.tab==='new'?'old':'new'];
   const rangeInput = deck==='hsk'
     ? `<select id="m2rLv" style="width:auto;">${[...new Set(R.cards.map(c=>String(c.level)))].sort().map(l=>`<option value="${l}">${l}급</option>`).join('')}</select>
@@ -4933,17 +4942,18 @@ function m2RenderRange(){
       <button type="button" class="${R.tab==='new'?'primary':'ghost'} small" style="flex:1;" onclick="m2Tab('new')">이번 주 새 분량 (${R.sel.new.size})</button>
       <button type="button" class="${R.tab==='old'?'primary':'ghost'} small" style="flex:1;" onclick="m2Tab('old')">예전 복습 (${R.sel.old.size})</button>
     </div>
-    <div class="sub" style="margin-bottom:6px;">${R.tab==='new'?'과외 전까지 서로 다른 날 2번 맞혀야 끝나요':'과외 전까지 한 번씩 봐요 (틀린 건 다음 날 다시)'}</div>
+    <div class="sub" style="margin-bottom:6px;">${R.tab==='new'?(deck==='hsk'?'과외 전날까지 매일 전부 나와요':'과외 전까지 서로 다른 날 2번 맞혀야 끝나요'):'과외 전까지 한 번씩 봐요 (틀린 건 다음 날 다시)'}</div>
     <div class="hstack" style="flex-wrap:wrap;align-items:center;gap:4px;background:var(--paper-2);padding:8px;border-radius:8px;margin-bottom:8px;">
       ${rangeInput}<button type="button" class="ghost small" onclick="m2AddRange()">구간 추가</button>
       <button type="button" class="ghost small" style="color:var(--seal);" onclick="m2ClearTab()">비우기</button>
     </div>
-    <div style="max-height:300px;overflow-y:auto;border-top:1px solid var(--line);">${list}</div>
+    <div id="m2rList" style="max-height:300px;overflow-y:auto;border-top:1px solid var(--line);">${list}</div>
     <div class="hstack" style="margin-top:10px;">
       <button class="ghost" style="flex:1;" onclick="closeModal()">닫기</button>
       <button class="primary" style="flex:1;" onclick="m2SaveRange()">저장</button>
     </div>`;
   document.querySelectorAll('#modalContent input[data-some="1"]').forEach(cb=>{ cb.indeterminate = true; });
+  const nl = document.getElementById('m2rList'); if(nl) nl.scrollTop = keepScroll;   // 체크해도 스크롤 위치 유지
 }
 function m2Tab(t){ window._m2r.tab = t; m2RenderRange(); }
 function m2OpenGroup(k){ const o=window._m2r.open; o.has(k)?o.delete(k):o.add(k); m2RenderRange(); }
