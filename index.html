@@ -3468,7 +3468,7 @@ async function rateCard(rating){
       if(!cleared.includes(card._key)) cleared.push(card._key);
       await setClearedMission(cleared);
     } else if(review.mode==='m2'){
-      await m2Record(review.deck, card.id, true);
+      await m2Record(review.deck, card.id, true, m2SessDay());
     } else if(review.mode==='m2make'){
       await m2Record(review.deck, card.id, true, review.makeDate);
     } else if(review.mode==='m2redo'){
@@ -3483,7 +3483,7 @@ async function rateCard(rating){
     }
   } else {
     if(review.mode==='today' || review.mode==='revday') await srsRate(card._deck||review.deck, card.id, false);
-    if(review.mode==='m2') await m2Record(review.deck, card.id, false);
+    if(review.mode==='m2') await m2Record(review.deck, card.id, false, m2SessDay());
     if(review.mode==='m2make') await m2Record(review.deck, card.id, false, review.makeDate);
     review.queue.push(card);
   }
@@ -4787,6 +4787,17 @@ async function m2EnsurePlan(force){
     dayLog[plan.date] = {cycle:plan.cycle, decks:plan.decks, done:(dr && dr.date===plan.date) ? dr.keys : []};
     await sSet('m2-days', dayLog);
   }
+  if(!(await sGet('m2-fix-midnight-1'))){
+    // 한 번만: 자정 넘어 푼 어제 미션이 오늘 것으로 잘못 기록된 경우 정리
+    const y = addDays(t,-1), dr = await sGet('m2-done');
+    if(dayLog[y] && dr && dr.date===t){
+      const yd = new Set(dayLog[y].done);
+      dr.keys = dr.keys.filter(k=>!yd.has(k)); await sSet('m2-done', dr);
+      if(dayLog[t]){ dayLog[t].done = dayLog[t].done.filter(k=>!yd.has(k)); await sSet('m2-days', dayLog); }
+      force = true;
+    }
+    await sSet('m2-fix-midnight-1', true);
+  }
   if(await sGet('m2-replan')){ force = true; await sSet('m2-replan', false); }
   if(!force && plan && plan.date===t && plan.sig===sig) return {plan, decks, s, ranges};
   const prog = await m2GetProg(cycle);
@@ -4841,6 +4852,9 @@ async function m2Record(deck, id, good, makeDate){
   prog.cards[key] = e;
   await sSet('m2-prog', prog);
 }
+
+/* 미션 도중 자정이 넘어도 시작한 날의 미션으로 기록 */
+function m2SessDay(){ return (review && review.day && review.day!==todayStr()) ? review.day : undefined; }
 
 /* ---- 지난 날 만회 ---- */
 async function m2MarkMadeUp(ds, key){
@@ -4903,7 +4917,7 @@ async function m2StartMission(deck){
   let list = ids.map(id=>byId.get(id)).filter(Boolean).map(c=>({...c, _key:deck+':'+c.id}));
   list = deck==='expr' ? orderExprByGroup(list, decks[deck]) : shuffle(list);
   const starred = new Set(await getStarredKeys());
-  review = {deck, queue:list, index:0, stage:'question', starred, mode:'m2'};
+  review = {deck, queue:list, index:0, stage:'question', starred, mode:'m2', day:todayStr()};
   document.getElementById('reviewOverlay').classList.add('active');
   pushOverlayState();
   renderReviewStep();
