@@ -4775,7 +4775,7 @@ async function m2EnsurePlan(force){
   const t = todayStr();
   const cycle = m2Cycle(s);
   const ranges = {}; for(const d of M2_DECKS) ranges[d] = await m2GetRange(d);
-  const sig = cycle+'|'+M2_DECKS.map(d=>{ const r=ranges[d]; return r?(r.cycle+':'+(r.new||[]).length+':'+(r.old||[]).length+':'+(r.at||'')):'-'; }).join('|');
+  const sig = 'p3|'+cycle+'|'+M2_DECKS.map(d=>{ const r=ranges[d]; return r?(r.cycle+':'+(r.new||[]).length+':'+(r.old||[]).length+':'+(r.at||'')):'-'; }).join('|');
   let plan = await sGet('m2-plan');
   if(!force && plan && plan.date===t && plan.sig===sig) return {plan, decks, s, ranges};
   const prog = await m2GetProg(cycle);
