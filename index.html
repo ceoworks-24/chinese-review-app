@@ -2256,8 +2256,9 @@ const W1019_VOCAB_PY = ['yóulèyuán','xióngmāo','xiě xìn','mén','ménkǒu
   'chuántǒng','wǔshù','zǎochen','yǐqián','wèishénme',
   'dàifu','shūfu','bù shūfu','dùzi','téng','tóu téng','tòng','cóng','shénme shíhou','de','gèng','hǎixiān','tài…le','yuǎn','yīyuàn','fēnzhōng','zhīdào'];
 async function m2PresetW1019(){
-  if(await sGet('m2-preset-1019c')) return;
-  if(todayStr() > '2026-10-21'){ await sSet('m2-preset-1019c', true); return; }
+  if(await sGet('m2-preset-1019d')) return;
+  const starredAlreadyReset = !!(await sGet('m2-preset-1019c'));
+  if(todayStr() > '2026-10-21'){ await sSet('m2-preset-1019d', true); return; }
   const s = await getSettings();
   const LD = '2026-10-22';
   if(!s.nextLesson || s.nextLesson.slice(0,10)!==LD){
@@ -2275,33 +2276,29 @@ async function m2PresetW1019(){
   await sSet('m2-range-hsk',   {cycle, new:hskIds,   old:[], start:{}, at});
   await sSet('m2-range-vocab', {cycle, new:vocabIds, old:[], start:{}, at});
   await sSet('m2-range-expr',  {cycle, new:exprIds,  old:[], start:{}, at});
-  // 이번 주만: 3일에 고르게 (새 것은 서로 다른 두 날에 한 번씩, 한자는 매일 전부)
+  // 이번 주만: 반복 없이 범위를 남은 날에 균등하게 한 번씩 (헷갈리는 건 즐겨찾기로 직접 반복)
   const days = []; for(let d=todayStr(); d<=m2Eve(s); d=addDays(d,1)) days.push(d);
   const order = (cards, ids)=>{ const S=new Set(ids); return cards.filter(c=>S.has(c.id)); };
   const fixed = {cycle, decks:{
-    hsk: Object.fromEntries(days.map(d=>[d, hskIds.slice()])),
+    hsk: m2EvenSchedule('hsk', order(hsk, hskIds), days),
     vocab: m2EvenSchedule('vocab', order(vocab, vocabIds), days),
     expr: m2EvenSchedule('expr', order(expr, exprIds), days),
   }};
   await sSet('m2-fixed', fixed);
-  // 즐겨찾기 초기화 (한자·단어·표현 모두)
-  await setStarredKeys([]);
-  await setClearedStarred([]);
+  // 즐겨찾기 초기화 (한자·단어·표현 모두) — 한 번만
+  if(!starredAlreadyReset){ await setStarredKeys([]); await setClearedStarred([]); }
   await sSet('m2-plan', null);
   await sSet('m2-preset-1019c', true);
+  await sSet('m2-preset-1019d', true);
 }
-/* 카드들을 묶음(표현은 예문 묶음 단위)으로 나눠, 서로 다른 두 날에 한 번씩 고르게 배치 */
+/* 카드들을 남은 날 수로 균등하게 나눠 하루에 한 묶음씩 (표현은 예문 묶음이 갈라지지 않게) */
 function m2EvenSchedule(deck, cards, days){
   const D = days.length, out = Object.fromEntries(days.map(d=>[d,[]]));
-  if(D===0) return out;
-  const pairs = D===1 ? [[0,0]] : (D===2 ? [[0,1]] : days.map((_,k)=>[k,(k+1)%D]));
-  const n = pairs.length; let rest = cards.slice();
-  for(let i=0;i<n;i++){
-    const want = Math.ceil(rest.length/(n-i));
-    const chunk = m2TakeChunk(deck, rest, want);
+  let rest = cards.slice();
+  for(let i=0;i<D;i++){
+    const chunk = m2TakeChunk(deck, rest, Math.ceil(rest.length/(D-i)));
     rest = rest.slice(chunk.length);
-    const [a,b] = pairs[i];
-    chunk.forEach(c=>{ out[days[a]].push(c.id); if(b!==a) out[days[b]].push(c.id); });
+    out[days[i]] = chunk.map(c=>c.id);
   }
   return out;
 }
@@ -5151,18 +5148,13 @@ function m2BuildDeckPlan(deck, deckCards, range, prog, s, doneToday, fixedAll){
   let pick;
   const FX = fixedAll && fixedAll.cycle===m2Cycle(s) && fixedAll.decks && fixedAll.decks[deck];
   if(FX){
-    // 이번 주 고정 배치: 오늘 몫 + 지난날 몫 중 못 맞힌 것 + 틀린 것 (전날엔 이번 주 틀린 것 전부)
-    const inSet = new Set(inRange.map(c=>c.id));
+    // 이번 주 고정 배치 (반복 없음): 오늘 몫 + 지난날 몫 중 아예 안 푼 것
     const todayIds = new Set(FX[t]||[]);
-    const carry = inRange.filter(c=>{
-      const before = Object.keys(FX).filter(d=>d<t && (FX[d]||[]).includes(c.id)).length;
-      if(!before) return false;
-      const okBefore = (P(deck+':'+c.id).days||[]).filter(d=>d<t).length;
-      return okBefore < before;
-    });
+    const notYet = c=>{ const f = m2FirstOf(P(deck+':'+c.id)); return !f || f >= t; };
+    const carry = inRange.filter(c=>Object.keys(FX).some(d=>d<t && (FX[d]||[]).includes(c.id)) && notYet(c));
     const allFx = new Set([].concat(...Object.values(FX)));
-    const extra = inRange.filter(c=>!allFx.has(c.id) && (P(deck+':'+c.id).days||[]).length<2 && !(P(deck+':'+c.id).days||[]).includes(t));  // 나중에 범위에 직접 추가한 것
-    pick = [].concat(retry, inRange.filter(c=>todayIds.has(c.id) && inSet.has(c.id)), carry, extra, t>=eve ? wrongAll : []);
+    const extra = inRange.filter(c=>!allFx.has(c.id) && notYet(c));   // 나중에 범위에 직접 추가한 것
+    pick = [].concat(inRange.filter(c=>todayIds.has(c.id)), carry, extra);
   } else if(t >= eve){
     // 과외 전날: 남은 것 전부 + 이번 주에 한 번이라도 틀린 것 전부 (한자 새 분량은 전부)
     const allNew = deck==='hsk' ? inRange.filter(c=>isNew.has(c.id)) : [];
