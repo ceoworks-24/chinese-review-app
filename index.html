@@ -1822,6 +1822,156 @@ async function syncVocabV1(){
    - 휴대폰에 없는 문장만 새로 추가돼요.
    - 순서와 그룹은 교재 목록 기준으로 정리돼요.
    - 목록에 없는 문장(직접 추가한 것)은 지우지 않고 그 과 맨 뒤에 남겨요. */
+/* 3권 6과·7과 표현 (2026-10-19 사진) */
+const EXPR_BOOK3_LESSON6_RAW = `어디가 불편하세요?\tNǐ nǎr bù shūfu?\t3\t6\t본문-1
+배가 아파요.\tWǒ dùzi téng.\t3\t6\t본문-1
+언제부터 배가 아프기 시작했어요?\tCóng shénme shíhou kāishǐ dùzi téng?\t3\t6\t본문-1
+어제 저녁이요. 지금은 더 심하게 아파요.\tZuótiān wǎnshang. Xiànzài téng de gèng lìhai.\t3\t6\t본문-1
+어젯밤에 뭘 먹었어요?\tNǐ zuótiān wǎnshang chīle shénme?\t3\t6\t본문-1
+해산물을 먹었는데, 게다가 너무 많이 먹었어요.\tWǒ chīle hǎixiān, érqiě chī de tài duō le.\t3\t6\t본문-1
+내 친구는 프랑스에서 와요.\tWǒ péngyou cóng Fǎguó lái.\t3\t6\t예문-1
+여기에서 우체국까지 멀어요?\tCóng zhèr dào yóujú yuǎn ma?\t3\t6\t예문-1
+당신은 말이 빨라요.\tNǐ shuō de hěn kuài.\t3\t6\t예문-2
+그녀는 잘 써요.\tTā xiě de hěn hǎo.\t3\t6\t예문-2
+엄마는 요리를 맛있게 만들어요.\tMāma (zuò) cài zuò de hěn hǎochī.\t3\t6\t예문-2
+그는 중국어를 잘해요.\tTā (shuō) Hànyǔ shuō de hěn hǎo.\t3\t6\t예문-2
+그는 농구를 못해요.\tTā (dǎ) lánqiú dǎ de bù hǎo.\t3\t6\t예문-3
+우리 엄마는 운전을 그다지 잘 못해요.\tWǒ māma (kāi) chē kāi de bú tài hǎo.\t3\t6\t예문-3
+그는 축구를 잘 하나요?\tTā (tī) zúqiú tī de hǎo ma?\t3\t6\t예문-3
+그녀는 노래를 잘 불러요, 못 불러요?\tTā (chàng) gē chàng de hǎo bu hǎo?\t3\t6\t예문-3
+이 옷은 너무 비싸요.\tZhè jiàn yīfu tài guì le.\t3\t6\t예문-4
+오늘 날씨는 매우 좋아요.\tJīntiān tiānqì tài hǎo le.\t3\t6\t예문-4
+그녀는 말이 너무 빨라요.\tTā shuō de tài kuài le.\t3\t6\t예문-4
+어제부터 더 심하게 아프기 시작했어요.\tCóng zuótiān kāishǐ téng de gèng lìhai.\t3\t6\t예문-5
+작년부터 중국어를 배우기 시작했어요.\tCóng qùnián kāishǐ xué Hànyǔ.\t3\t6\t예문-5
+지난달부터 일하기 시작했어요.\tCóng shàng ge yuè kāishǐ gōngzuò.\t3\t6\t예문-5
+내년부터 수영을 배우기 시작할 거예요.\tCóng míngnián kāishǐ xué yóu yǒng.\t3\t6\t예문-5
+나는 내년부터 운전을 배우기 시작할 거예요.\tWǒ cóng míngnián kāishǐ xué kāi chē.\t3\t6\t예문-5
+지금 심하게 아파요?\tXiànzài téng de lìhai ma?\t3\t6\t예문-6
+지금 더 심하게 아파요.\tXiànzài téng de gèng lìhai.\t3\t6\t예문-6
+언니는 중국어를 잘해요, 못해요?\tJiějie (shuō) Hànyǔ shuō de hǎo bu hǎo?\t3\t6\t예문-6
+그녀는 중국어를 잘해요.\tTā (shuō) Hànyǔ shuō de hěn hǎo.\t3\t6\t예문-6
+남동생은 빨리 먹어요.\tDìdi chī de hěn kuài.\t3\t6\t예문-6
+저는 너무 많이 먹었어요.\tWǒ chī de tài duō le.\t3\t6\t예문-7
+저는 너무 배부르게 먹었어요.\tWǒ chī de tài bǎo le.\t3\t6\t예문-7
+당신은 요리를 너무 맛있게 해요.\tNǐ zuò de tài hǎochī le.\t3\t6\t예문-7
+당신은 너무 비싸게 팔아요.\tNǐ mài de tài guì le.\t3\t6\t예문-7
+선생님이 너무 빨리 말하세요.\tLǎoshī shuō de tài kuài le.\t3\t6\t예문-7
+그들은 자전거를 타는 것이 어떻습니까?\tTāmen qí zìxíngchē qí de zěnmeyàng?\t3\t6\t연습-1
+왕 선생님은 자전거를 빨리 탑니다.\tWáng lǎoshī qí zìxíngchē qí de hěn kuài.\t3\t6\t연습-1
+그러나 동민이는 자전거를 빨리 타지 않습니다.\tDànshì Dōngmín qí zìxíngchē qí de bú kuài.\t3\t6\t연습-1
+그들은 요리하는 것이 어떻습니까?\tTāmen zuò cài zuò de zěnmeyàng?\t3\t6\t연습-1
+엄마는 요리를 맛있게 합니다.\tMāma zuò cài zuò de hěn hǎochī.\t3\t6\t연습-1
+그러나 아빠는 요리를 맛있게 하지 못합니다.\tDànshì bàba zuò cài zuò de bù hǎochī.\t3\t6\t연습-1
+그들은 수영하는 것이 어떻습니까?\tTāmen yóu yǒng yóu de zěnmeyàng?\t3\t6\t연습-1
+동민이는 수영을 빨리 합니다.\tDōngmín yóu yǒng yóu de hěn kuài.\t3\t6\t연습-1
+그러나 샤오잉은 수영을 빨리 하지 못합니다.\tDànshì Xiǎoyīng yóu yǒng yóu de bú kuài.\t3\t6\t연습-1
+그들은 중국어를 말하는 것이 어떻습니까?\tTāmen shuō Hànyǔ shuō de zěnmeyàng?\t3\t6\t연습-1
+안나는 중국어를 잘합니다.\tĀnnà shuō Hànyǔ shuō de hěn hǎo.\t3\t6\t연습-1
+그러나 동민이는 중국어를 잘하지 못합니다.\tDànshì Dōngmín shuō Hànyǔ shuō de bù hǎo.\t3\t6\t연습-1
+당신 아버지는 어디가 불편하세요?\tNǐ bàba nǎr bù shūfu?\t3\t6\t연습-2
+나는 중국어를 그다지 잘 못합니다.\tWǒ (shuō) Hànyǔ shuō de bú tài hǎo.\t3\t6\t연습-2
+중국인은 자전거를 잘 탑니다.\tZhōngguórén (qí) zìxíngchē qí de hěn hǎo.\t3\t6\t연습-2
+어제저녁부터 비가 내리기 시작했습니다.\tCóng zuótiān wǎnshang kāishǐ xià yǔ.\t3\t6\t연습-2
+어제 저녁에 동민이는 반 친구들과 왕 선생님 댁에 가서 밥을 먹었어요.\tZuótiān wǎnshang, Dōngmín gēn tóngxuémen qù Wáng lǎoshī jiā chī fàn le.\t3\t6\t본문-2
+왕 선생님은 닭고기, 돼지고기, 해산물 등 많은 요리를 만드셨어요.\tWáng lǎoshī zuòle hěn duō cài, yǒu jīròu, zhūròu, hǎixiān děngděng.\t3\t6\t본문-2
+왕 선생님은 요리를 아주 맛있게 하셔서, 반 친구들이 모두 좋아했어요.\tWáng lǎoshī zuò cài zuò de hěn hǎochī, tóngxuémen dōu hěn xǐhuan.\t3\t6\t본문-2
+동민이는 해산물을 제일 좋아해서 많이 먹었는데, 결국 배가 심하게 아팠어요.\tDōngmín zuì xǐhuan chī hǎixiān, chī de hěn duō, jiéguǒ dùzi téng de hěn lìhai.\t3\t6\t본문-2
+그래서 오늘 아침에 그는 병원에 진료를 받으러 갔어요.\tSuǒyǐ jīntiān zǎoshang tā qù yīyuàn kàn bìng le.\t3\t6\t본문-2`;
+const EXPR_BOOK3_LESSON7_RAW = `실례지만, 이화원에 어떻게 가요?\tQǐngwèn, qù Yíhéyuán zěnme zǒu?\t3\t7\t본문-1
+앞으로 쭉 가다가, 신호등에서 왼쪽으로 도세요.\tYìzhí wǎng qián zǒu, dào hónglǜdēng wǎng zuǒ guǎi.\t3\t7\t본문-1
+여기서 멀어요, 안 멀어요?\tLí zhèr yuǎn bu yuǎn?\t3\t7\t본문-1
+별로 안 멀어요, 10분 걸으면 바로 도착해요.\tBú tài yuǎn, zǒu shí fēnzhōng jiù dào le.\t3\t7\t본문-1
+감사합니다.\tXièxie nǐ.\t3\t7\t본문-1
+저도 이화원에 가니까, 제가 데려다 드릴게요.\tWǒ yě qù Yíhéyuán, wǒ dài nǐ qù ba.\t3\t7\t본문-1
+내일 나는 동물원에 갈 거예요.\tMíngtiān wǒ yào qù dòngwùyuán.\t3\t7\t예문-1
+우리 같이 백화점에 갑시다.\tWǒmen yìqǐ qù bǎihuò shāngdiàn ba.\t3\t7\t예문-1
+당신은 언제 갈 거예요?\tNǐ yào shénme shíhou zǒu?\t3\t7\t예문-1
+그는 이미 갔어요.\tTā yǐjīng zǒu le.\t3\t7\t예문-1
+사거리에서 우회전하세요.\tZài shízì lùkǒu wǎng yòu guǎi.\t3\t7\t예문-2
+당신이 먼저 앞으로 가세요.\tNǐ xiān wǎng qián zǒu.\t3\t7\t예문-2
+기차가 7시에 도착했어요.\tHuǒchē qī diǎn dào le.\t3\t7\t예문-2
+나는 학교에 도착했어요.\tWǒ dào xuéxiào le.\t3\t7\t예문-2
+주말이 됐어요.\tDào zhōumò le.\t3\t7\t예문-2
+학교는 우리 집에서 매우 가까워요.\tXuéxiào lí wǒ jiā hěn jìn.\t3\t7\t예문-3
+성탄절까지는 일주일이 더 남았어요.\tLí Shèngdàn Jié hái yǒu yí ge xīngqī.\t3\t7\t예문-3
+수업이 끝날 때까지 아직 5분이 남았어요.\tLí xià kè hái yǒu wǔ fēnzhōng.\t3\t7\t예문-3
+우리는 8시부터 12시까지 수업해요.\tWǒmen cóng bā diǎn dào shí'èr diǎn shàng kè.\t3\t7\t예문-3
+이화원에 어떻게 가요?\tQù Yíhéyuán zěnme zǒu?\t3\t7\t예문-4
+서점에 어떻게 가요?\tQù shūdiàn zěnme zǒu?\t3\t7\t예문-4
+지하철역에 어떻게 가요?\tQù dìtiězhàn zěnme zǒu?\t3\t7\t예문-4
+공원에 어떻게 가요?\tQù gōngyuán zěnme zǒu?\t3\t7\t예문-4
+왕 선생님 집에 어떻게 가요?\tQù Wáng lǎoshī jiā zěnme zǒu?\t3\t7\t예문-4
+신호등에 가서 좌회전하세요.\tDào hónglǜdēng wǎng zuǒ guǎi.\t3\t7\t예문-5
+사거리에 가서 우회전하세요.\tDào shízì lùkǒu wǎng yòu guǎi.\t3\t7\t예문-5
+은행에 가서 좌회전하세요.\tDào yínháng wǎng zuǒ guǎi.\t3\t7\t예문-5
+커피숍에 가서 우회전하세요.\tDào kāfēidiàn wǎng yòu guǎi.\t3\t7\t예문-5
+편의점에 도착해서 좌회전하세요.\tDào biànlìdiàn wǎng zuǒ guǎi.\t3\t7\t예문-5
+이화원은 여기서 멀어요, 안 멀어요?\tYíhéyuán lí zhèr yuǎn bu yuǎn?\t3\t7\t예문-6
+이화원은 여기서 멀지 않아요.\tYíhéyuán lí zhèr bù yuǎn.\t3\t7\t예문-6
+기차역은 당신 집에서 멀어요?\tHuǒchēzhàn lí nǐ jiā yuǎn ma?\t3\t7\t예문-6
+기차역은 우리 집에서 멀지 않고, 아주 가까워요.\tHuǒchēzhàn lí wǒ jiā bù yuǎn, hěn jìn.\t3\t7\t예문-6
+학교는 우리 집에서 매우 멀어요.\tXuéxiào lí wǒ jiā hěn yuǎn.\t3\t7\t예문-6
+천안문에 어떻게 갑니까?\tQù Tiān'ānmén zěnme zǒu?\t3\t7\t연습-1
+우리 집은 지하철역에서 멀지 않습니다.\tWǒ jiā lí dìtiězhàn bù yuǎn.\t3\t7\t연습-1
+곧장 앞으로 가다가 병원에 도착해서 좌회전하세요.\tYìzhí wǎng qián zǒu, dào yīyuàn wǎng zuǒ guǎi.\t3\t7\t연습-1
+20분 걸으면 바로 도착합니다.\tZǒu èrshí fēnzhōng jiù dào le.\t3\t7\t연습-1
+국경절에 동민이와 안나는 함께 이화원에 놀러 가기로 계획했어요.\tGuóqìng Jié Dōngmín hé Ānnà jìhuà yìqǐ qù Yíhéyuán wánr.\t3\t7\t본문-2
+하지만 그들은 모두 이화원에 어떻게 가는지 몰랐어요.\tKěshì tāmen dōu bù zhīdào qù Yíhéyuán zěnme zǒu.\t3\t7\t본문-2
+그들 앞에 여학생이 한 명 있어서, 동민이가 그녀에게 어떻게 가는지 물었어요.\tTāmen qiánbianr yǒu yí ge nǚshēng, Dōngmín wèn tā zěnme zǒu.\t3\t7\t본문-2
+그녀는 동민이에게 앞으로 쭉 가다가 신호등에서 좌회전해서 10분 걸으면 바로 도착한다고 알려 줬어요.\tTā gàosu Dōngmín yìzhí wǎng qián zǒu, dào hónglǜdēng wǎng zuǒ guǎi, zǒu shí fēnzhōng jiù dào le.\t3\t7\t본문-2
+그 여학생은 그들을 데리고 함께 가 주기까지 했어요.\tNàge nǚshēng hái dài tāmen yìqǐ qù le.\t3\t7\t본문-2
+그들은 운이 정말 좋았어요.\tTāmen de yùnqi zhēn hǎo.\t3\t7\t본문-2`;
+/* 6과·7과 단어 (이미 있는 단어는 건너뜀) */
+const VOCAB_ADD_V2_RAW = `lánqiú\t농구
+tī\t(발로) 차다
+zúqiú\t축구
+zǎo\t(때가) 이르다, 빠르다
+bǎo\t배부르다
+jīròu\t닭고기
+zhūròu\t돼지고기
+děngděng\t등등
+jiéguǒ\t결국, 마침내, 끝내
+kàn bìng\t진료를 받다
+dànshì\t그러나, 하지만
+ěrduo\t귀
+liǎn\t얼굴
+yǎnjing\t눈
+bózi\t목
+bízi\t코
+jiānbǎng\t어깨
+zuǐ\t입
+gēbo\t팔
+shǒu\t손
+yāo\t허리
+xīgài\t무릎
+tuǐ\t다리
+jiǎo\t발
+qǐngwèn\t말씀 좀 묻겠습니다
+Yíhéyuán\t이허위안, 이화원
+zǒu\t가다, 떠나다, 걷다
+yìzhí\t계속, 줄곧, 늘
+wǎng\t~를 향하여
+dào\t도착하다, 이르다
+hónglǜdēng\t신호등
+dēng\t등, 등불
+lùdēng\t가로등
+guǎi\t돌다, 회전하다
+wǎng yòu guǎi\t우회전하다
+wǎng zuǒ guǎi\t좌회전하다
+lí\t~에서, ~로부터, ~까지
+jìn\t가깝다
+dài\t데리고 가다, (몸에) 지니다, 휴대하다
+shízì lùkǒu\t사거리
+Shèngdàn Jié\t크리스마스, 성탄절
+biànlìdiàn\t편의점
+huǒchēzhàn\t기차역
+Guóqìng Jié\t국경절
+jìhuà\t계획하다, 계획
+nǚshēng\t여학생
+wèn\t묻다, 질문하다
+gàosu\t알리다
+yùnqi\t운, 운수`;
 const EXPR_SEEDS = [
   {book:3, lesson:0, ver:1, raw:()=>EXPR_BOOK3_LESSON0_RAW},
   {book:3, lesson:1, ver:2, raw:()=>EXPR_BOOK3_LESSON1_RAW},
@@ -1829,8 +1979,186 @@ const EXPR_SEEDS = [
   {book:3, lesson:3, ver:1, raw:()=>EXPR_BOOK3_LESSON3_RAW},
   {book:3, lesson:4, ver:1, raw:()=>EXPR_BOOK3_LESSON4_RAW},
   {book:3, lesson:5, ver:1, raw:()=>EXPR_BOOK3_LESSON5_RAW},
+  {book:3, lesson:6, ver:1, raw:()=>EXPR_BOOK3_LESSON6_RAW},
+  {book:3, lesson:7, ver:1, raw:()=>EXPR_BOOK3_LESSON7_RAW},
 ];
 function normPy(py){ return String(py||'').trim().replace(/\s+/g,' '); }
+/* ---- 표현 학습 포인트 (정답 화면에 '무엇을 연습하는 문장인지' 표시) ----
+   묶음(권-과-그룹) 단위로 붙이고, 본문·연습처럼 문장마다 다른 건 문장별로 따로 붙여요. */
+const EXPR_POINT_GROUP = {
+  '3-0-01-이름':'叫 / 姓 — 이름 묻고 답하기',
+  '3-0-02-국적':'哪国人 — 국적 묻기',
+  '3-0-03-나이':'多大 / 岁 — 나이 묻기',
+  '3-0-04-위치':'在 + 장소 — 어디에 있다',
+  '3-0-05-날짜':'几月几号 — 날짜 묻기',
+  '3-0-06-계획':'去 + 동사 — ~하러 가다',
+  '3-0-07-완료':'了 / 还没 — 했다 · 아직 안 했다',
+  '3-0-08-가능':'会 — (배워서) 할 줄 알다',
+  '3-0-09-진행':'在 + 동사 — ~하고 있다 / 没在',
+  '3-0-10-경험':'동사 + 过 — ~한 적 있다',
+  '3-0-11-교통수단':'怎么去 / 骑…去 — 어떻게 가다',
+  '3-0-12-가격':'多少钱 — 값 묻기',
+  '3-1-예문-1':'来 + 동사 — (내가/당신이) ~하다',
+  '3-1-예문-2':'来 — 다른 동사 대신 쓰는 来',
+  '3-1-예문-3':'位 — 사람을 높여 세는 말',
+  '3-1-예문-4':'多 / 少 + 동사 — 많이·적게 ~하다',
+  '3-1-예문-5':'来 + 동사 + 一下 — 좀 ~해 보다',
+  '3-1-예문-6':'这位 / 那位 — 이 분 · 저 분',
+  '3-1-예문-7':'请多 + 동사 — 많이 ~해 주세요',
+  '3-2-예문-1':'동사 + 在 + 장소 — ~에서 ~하다',
+  '3-2-예문-2':'不A也不B — A하지도 B하지도 않다',
+  '3-2-예문-3':'…，就是… — ~한데, 단지 ~하다',
+  '3-2-예문-4':'有点儿 + 형용사 — 조금 (아쉽게) ~하다',
+  '3-2-예문-5':'동사 + 在 + 장소 — ~에서 ~하다',
+  '3-2-예문-6':'不A也不B — A하지도 B하지도 않다',
+  '3-2-예문-7':'…，就是有点儿… — ~한데, 단지 좀 ~하다',
+  '3-3-예문-1':'一边…一边… — ~하면서 ~하다',
+  '3-3-예문-2':'A 还是 B — A 아니면 B (선택 의문)',
+  '3-3-예문-3':'有的…有的… — 어떤 것은 ~, 어떤 것은 ~',
+  '3-3-예문-4':'一次也没(有)… — 한 번도 ~하지 않았다',
+  '3-3-예문-5':'一边…一边… — ~하면서 ~하다',
+  '3-3-예문-6':'동사 + 的是 A 还是 B — ~하는 건 A야 B야?',
+  '3-3-예문-7':'一次也没 + 동사 + 过 — 한 번도 ~해 본 적 없다',
+  '3-4-예문-1':'能 — (상황·조건상) ~할 수 있다',
+  '3-4-예문-2':'会 / 能 — 능력 (얼마나 할 수 있는지는 能)',
+  '3-4-예문-3':'문장 끝 了 — ~했다',
+  '3-4-예문-4':'동사 + 了 + 수량·목적어 / 没 + 동사',
+  '3-4-예문-5':'동사 + 了 + 以后 — ~한 후에',
+  '3-4-예문-6':'打算 — ~할 계획이다',
+  '3-5-예문-1':'동사 + 着 — ~한 채로 있다 (상태 지속)',
+  '3-5-예문-2':'(正)在…(呢) — ~하고 있다 (진행)',
+  '3-5-예문-3':'正在 (동작 진행) vs 着 (상태 지속)',
+  '3-5-예문-4':'동사 + 过 + 횟수 — ~번 해 본 적 있다',
+  '3-4-문형연습-1':'동사 + 了 + 수량 — 몇 개·몇 시간 ~했다',
+  '3-4-문형연습-2':'还没 / …了没有? / 已经…了 — 했는지 묻고 답하기',
+  '3-4-문형연습-3':'打算 — ~할 계획이다',
+  '3-5-문형연습-1':'동사 + 着 — ~한 채로 (상태 지속)',
+  '3-5-문형연습-2':'正在…呢 — ~하고 있다 (진행)',
+  '3-5-문형연습-3':'동사 + 一下 / 동사 중첩 — 좀 ~해 보다',
+  '3-5-동사중첩':'동사 중첩 — 좀 ~하다',
+  '3-6-예문-1':'从 — ~에서·~부터 (출발점) · 从…到',
+  '3-6-예문-2':'정도보어 得 — 동사 + 得 + 정도',
+  '3-6-예문-3':'정도보어 부정·의문 — 得不… / 得…吗? / 得好不好?',
+  '3-6-예문-4':'太…了 — 너무 ~하다',
+  '3-6-예문-5':'从…开始 — ~부터 ~하기 시작하다',
+  '3-6-예문-6':'정도보어 — 疼得厉害 / 说得好不好',
+  '3-6-예문-7':'得太…了 — 너무 ~하게 했다',
+  '3-7-예문-1':'去 vs 走 — 去 + 장소 / 走 = 떠나다',
+  '3-7-예문-2':'往 (~쪽으로) · 到 (도착하다·이르다)',
+  '3-7-예문-3':'离 (기준점에서 거리·시간) · 从…到 (~부터 ~까지)',
+  '3-7-예문-4':'去 + 장소 + 怎么走? — 길 묻기',
+  '3-7-예문-5':'到 + 장소 + 往 + 방향 + 拐 — 길 안내',
+  '3-7-예문-6':'A 离 B 远 / 近 — 거리 말하기',
+};
+const EXPR_POINT_LINE_RAW = `3-1	Dàjiā hǎo! Wǒ jiào Wáng Míng, shì nǐmen de Hànyǔ lǎoshī.	叫 / 是 — 자기소개
+3-1	Wáng lǎoshī hǎo!	호칭 + 好 — 인사
+3-1	Qǐng dàjiā lái jièshào yíxià zìjǐ.	请 + 来 + 동사 + 一下 — 좀 ~해 주세요
+3-1	Zhè wèi tóngxué, nǐ xiān lái ba.	位 · 来 (다른 동사 대신)
+3-1	Wǒ jiào Ānnà, shì Měiguórén. Rènshi dàjiā, hěn gāoxìng.	认识…很高兴 — 만나서 반갑다
+3-1	Wǒ xìng Lǐ, jiào Lǐ Dōngmín, shì Hánguórén. Qǐng duō guānzhào.	姓 / 叫 · 请多关照
+3-1	Wǒ jiào Dōngmín, jīnnián èrshí'èr suì, shì Hánguórén, lái Běijīng xué Hànyǔ.	来 + 장소 + 동사 — ~하러 오다
+3-1	Jīntiān dì-yī tiān shàng kè, wǒ hé yí ge tóngxué zìwǒ jièshào.	第一 (순서) · 和 — ~와
+3-1	Wǒ de tóngxué jiào Ānnà, shì yí ge Měiguó nǚháir, hěn piàoliang.	是 + 一个 + 명사 · 很 + 형용사
+3-1	Wǒmen de Hànyǔ lǎoshī jiào Wáng Míng, jīnnián sìshí suì. Tā kàn qǐlai hěn qīnqiè.	看起来 — ~해 보이다
+3-2	Nǐ xiànzài zhùzài nǎr?	住在 + 장소 — ~에 살다
+3-2	Wǒ zhùzài liúxuéshēng sùshè.	住在 + 장소 — ~에 살다
+3-2	Tiáojiàn zěnmeyàng?	怎么样 — 어때요?
+3-2	Tiáojiàn búcuò, fángjiān bú dà yě bù xiǎo.	不A也不B — A하지도 B하지도 않다
+3-2	Shēnghuó fāngbiàn bu fāngbiàn?	A不A — 정반 의문문
+3-2	Hěn fāngbiàn. Shāngdiàn, yínháng dōu zài fùjìn, jiùshì yǒudiǎnr chǎo.	就是 + 有点儿 — 단지 좀 ~하다
+3-2	Dōngmín zhùzài xuéxiào sùshè.	住在 + 장소 — ~에 살다
+3-2	Tā zhù de shì shuāngrénjiān, tiáojiàn hěn búcuò.	동사 + 的是 — ~하는 것은
+3-2	Fángjiān bú dà yě bù xiǎo, lǐbianr yǒu chuáng, diànshì, bīngxiāng, hái yǒu kōngtiáo.	不A也不B · 还有 — 또 ~도 있다
+3-2	Sùshè fùjìn yǒu yínháng, shāngdiàn, fàndiàn, hěn fāngbiàn.	장소 + 有 — ~에 ~이 있다
+3-2	Dōngmín yǒu yí ge tóngwū, jiào Màikè.	有 + 一个 + 명사, 叫…
+3-2	Màikè shì Yīngguórén, gèzi hěn gāo, tā de Hànyǔ hěn búcuò.	很 + 형용사 — 사람 묘사
+3-2	Tāmen dōu xǐhuan zhùzài Běijīng.	喜欢 + 동사 · 住在
+3-3	Nǐ xiànzài zuò shénme ne?	문장 끝 呢 — 지금 ~하고 있어?
+3-3	Yìbiān zuò zuòyè, yìbiān tīng yīnyuè.	一边…一边… — ~하면서 ~하다
+3-3	Nǐ tīng de shì gǔdiǎn yīnyuè háishi liúxíng yīnyuè?	동사 + 的是 A 还是 B
+3-3	Liúxíng yīnyuè. Wǒ xǐhuan tīng Zhōngguó liúxíng yīnyuè.	喜欢 + 동사 — ~하는 걸 좋아하다
+3-3	Tīngshuō hěn duō Zhōngguó niánqīngrén xǐhuan tīng Hánguó yīnyuè, shì ma?	听说 — 듣자 하니 · …是吗?
+3-3	Yǒude rén xǐhuan, yǒude rén bù xǐhuan.	有的…有的… — 어떤 사람은 ~, 어떤 사람은 ~
+3-3	Wǒ ne, yí cì yě méi tīngguo.	一次也没 + 동사 + 过
+3-3	Jīntiān shì xīngqītiān, Dōngmín qù Xiǎoyīng jiā wánr.	去 + 장소 + 동사 — ~하러 가다
+3-3	Xiǎoyīng yìbiān zuò zuòyè, yìbiān tīng Zhōngguó liúxíng yīnyuè.	一边…一边… — ~하면서 ~하다
+3-3	Hěn duō Zhōngguó niánqīngrén dōu xǐhuan tīng Hánguó liúxíng yīnyuè, kěshì Xiǎoyīng yí cì yě méi tīngguo.	可是 · 一次也没…过
+3-3	Suǒyǐ Dōngmín xiǎng gěi Xiǎoyīng jièshào yíxià Hánguó liúxíng yīnyuè.	所以 · 给 + 사람 + 동사 — ~에게 ~해 주다
+3-4	Zhōumò nǐ néng gēn wǒ yìqǐ qù bǎihuò shāngdiàn ma?	能 · 跟…一起 — ~와 함께
+3-4	Bù hǎoyìsi, zuótiān wǒ yǐjīng qù le.	已经…了 — 이미 ~했다
+3-4	Nǐ mǎile shénme?	동사 + 了 — ~했다 (완료)
+3-4	Wǒ mǎile liǎng jiàn máoyī.	동사 + 了 + 수량 + 목적어
+3-4	Nàme, zhège zhōumò nǐ dǎsuan gàn shénme?	打算 — ~할 계획이다
+3-4	Xià ge xīngqīyī yǒu kǎoshì, wǒ dǎsuan zài sùshè fùxí.	打算 + 在 + 장소 + 동사
+3-4	Zuìjìn tiānqì bǐjiào lěng, Dōngmín xiǎng mǎi jǐ jiàn nuǎnhuo de yīfu.	比较 — 비교적 · 想 + 동사
+3-4	Zuótiān tā qù bǎihuò shāngdiàn mǎile liǎng jiàn máoyī.	동사 + 了 + 수량 + 목적어
+3-4	Màikè dǎsuan zhōumò gēn Dōngmín qù bǎihuò shāngdiàn.	打算 · 跟 — ~와
+3-4	Hěn kěxī, Dōngmín zuótiān yǐjīng qù le.	已经…了 · 很可惜 — 아쉽게도
+3-4	Érqiě xià ge xīngqīyī yǒu kǎoshì, Dōngmín dǎsuan zhōumò zài sùshè fùxí.	而且 — 게다가 · 打算
+3-5	Mén zěnme kāizhe? Nǐ zài gàn shénme ne?	동사 + 着 (상태) · 在…呢 (진행)
+3-5	Wǒ zhèngzài dǎ tàijíquán.	正在 — ~하고 있는 중이다
+3-5	Zhēn lìhai! Nǐ zài xué tàijíquán, shì ma?	在 + 동사 (진행) · …是吗?
+3-5	Duì! Měi xīngqī xué sān cì.	每 + 기간 + 동사 + 횟수
+3-5	Biǎoyǎn yíxià, wǒ kànkan.	동사 + 一下 / 동사 중첩 — 좀 ~하다
+3-5	Méi wèntí. Nà, xiànzài kāishǐ.	没问题 · 那 — 그럼
+3-5	Nǐ zài shū shang xiě yíxià, wǒ kànkan.	동사 + 一下 / 동사 중첩 — 좀 ~해 보다
+3-5	Diànnǎo guānzhe, shǒujī yě guānzhe.	동사 + 着 — ~한 채로 (상태 지속)
+3-5	Wǒ zhèngzài dǎ diànhuà ne.	正在…呢 — ~하고 있다 (진행)
+3-5	Wǒmen méi zài shàng kè.	没在 + 동사 — ~하고 있지 않다
+3-5	Tàijíquán shì Zhōngguó chuántǒng wǔshù.	A 是 B — A는 B이다
+3-5	Měi tiān zǎochen hěn duō Zhōngguórén dōu zài gōngyuán dǎ tàijíquán.	在 + 장소 + 동사 — ~에서 ~하다
+3-5	Tīng shuō dǎ tàijíquán duì shēntǐ hěn hǎo, suǒyǐ Dōngmín zuìjìn zài xué dǎ tàijíquán.	对…很好 — ~에 좋다 · 在 (진행)
+3-5	Shàng kè yǐqián, Wáng lǎoshī xiān jiāo tāmen dǎ tàijíquán, měi xīngqī xué sān cì.	…以前 · 先 · 每 + 기간 + 횟수
+3-5	Xiànzài Dōngmín huì dǎ tàijíquán, kěshì Ānnà bú tài huì.	会 · 不太 — 그다지 ~못하다
+3-6	Nǐ nǎr bù shūfu?	哪儿不舒服 — 어디가 불편해요?
+3-6	Wǒ dùzi téng.	신체 + 疼 — ~가 아프다
+3-6	Cóng shénme shíhou kāishǐ dùzi téng?	从…开始 — 언제부터 ~하기 시작했나
+3-6	Zuótiān wǎnshang. Xiànzài téng de gèng lìhai.	정도보어 得 · 更 — 더
+3-6	Nǐ zuótiān wǎnshang chīle shénme?	동사 + 了 — ~했다 (완료)
+3-6	Wǒ chīle hǎixiān, érqiě chī de tài duō le.	而且 — 게다가 · 得太…了
+3-6	Zuótiān wǎnshang, Dōngmín gēn tóngxuémen qù Wáng lǎoshī jiā chī fàn le.	跟 + 사람 · 去 + 장소 + 동사
+3-6	Wáng lǎoshī zuòle hěn duō cài, yǒu jīròu, zhūròu, hǎixiān děngděng.	동사 + 了 + 목적어 · 等等 — 등등
+3-6	Wáng lǎoshī zuò cài zuò de hěn hǎochī, tóngxuémen dōu hěn xǐhuan.	정도보어 — 목적어 있으면 동사 반복
+3-6	Dōngmín zuì xǐhuan chī hǎixiān, chī de hěn duō, jiéguǒ dùzi téng de hěn lìhai.	정도보어 得 · 结果 — 결국
+3-6	Suǒyǐ jīntiān zǎoshang tā qù yīyuàn kàn bìng le.	所以 · 看病 — 진찰받다
+3-6	Tāmen qí zìxíngchē qí de zěnmeyàng?	정도보어 의문 — 동사 + 得 + 怎么样?
+3-6	Wáng lǎoshī qí zìxíngchē qí de hěn kuài.	정도보어 — 목적어 있으면 동사 반복
+3-6	Dànshì Dōngmín qí zìxíngchē qí de bú kuài.	정도보어 부정 — 得 + 不
+3-6	Tāmen zuò cài zuò de zěnmeyàng?	정도보어 의문 — 동사 + 得 + 怎么样?
+3-6	Māma zuò cài zuò de hěn hǎochī.	정도보어 — 목적어 있으면 동사 반복
+3-6	Dànshì bàba zuò cài zuò de bù hǎochī.	정도보어 부정 — 得 + 不
+3-6	Tāmen yóu yǒng yóu de zěnmeyàng?	정도보어 의문 — 동사 + 得 + 怎么样?
+3-6	Dōngmín yóu yǒng yóu de hěn kuài.	정도보어 — 목적어 있으면 동사 반복
+3-6	Dànshì Xiǎoyīng yóu yǒng yóu de bú kuài.	정도보어 부정 — 得 + 不
+3-6	Tāmen shuō Hànyǔ shuō de zěnmeyàng?	정도보어 의문 — 동사 + 得 + 怎么样?
+3-6	Ānnà shuō Hànyǔ shuō de hěn hǎo.	정도보어 — 목적어 있으면 동사 반복
+3-6	Dànshì Dōngmín shuō Hànyǔ shuō de bù hǎo.	정도보어 부정 — 得 + 不
+3-6	Nǐ bàba nǎr bù shūfu?	哪儿不舒服 — 어디가 불편해요?
+3-6	Wǒ (shuō) Hànyǔ shuō de bú tài hǎo.	정도보어 부정 — 得不太好
+3-6	Zhōngguórén (qí) zìxíngchē qí de hěn hǎo.	정도보어 — 목적어 있으면 동사 반복
+3-6	Cóng zuótiān wǎnshang kāishǐ xià yǔ.	从…开始 — ~부터 ~하기 시작하다
+3-7	Qǐngwèn, qù Yíhéyuán zěnme zǒu?	去 + 장소 + 怎么走? — 길 묻기
+3-7	Yìzhí wǎng qián zǒu, dào hónglǜdēng wǎng zuǒ guǎi.	往 + 방향 · 到 + 장소 — 길 안내
+3-7	Lí zhèr yuǎn bu yuǎn?	离 + 기준점 + 远不远? — 거리 묻기
+3-7	Bú tài yuǎn, zǒu shí fēnzhōng jiù dào le.	就…了 — 바로 ~하다
+3-7	Xièxie nǐ.	감사 인사
+3-7	Wǒ yě qù Yíhéyuán, wǒ dài nǐ qù ba.	带 + 사람 + 去 — 데려가다
+3-7	Guóqìng Jié Dōngmín hé Ānnà jìhuà yìqǐ qù Yíhéyuán wánr.	计划 — 계획하다 · 去 + 장소 + 동사
+3-7	Kěshì tāmen dōu bù zhīdào qù Yíhéyuán zěnme zǒu.	可是 · 怎么走 — 어떻게 가는지
+3-7	Tāmen qiánbianr yǒu yí ge nǚshēng, Dōngmín wèn tā zěnme zǒu.	장소 + 有 · 问 + 사람 — ~에게 묻다
+3-7	Tā gàosu Dōngmín yìzhí wǎng qián zǒu, dào hónglǜdēng wǎng zuǒ guǎi, zǒu shí fēnzhōng jiù dào le.	告诉 · 往 · 到 · 就…了
+3-7	Nàge nǚshēng hái dài tāmen yìqǐ qù le.	还 — 게다가 · 带 + 사람 + 去
+3-7	Tāmen de yùnqi zhēn hǎo.	运气真好 — 운이 정말 좋다
+3-7	Qù Tiān'ānmén zěnme zǒu?	去 + 장소 + 怎么走? — 길 묻기
+3-7	Wǒ jiā lí dìtiězhàn bù yuǎn.	A 离 B 不远 — 거리 말하기
+3-7	Yìzhí wǎng qián zǒu, dào yīyuàn wǎng zuǒ guǎi.	往 + 방향 · 到 + 장소 — 길 안내
+3-7	Zǒu èrshí fēnzhōng jiù dào le.	就…了 — 바로 ~하다`;
+const EXPR_POINT_LINE = (()=>{ const m = {}; EXPR_POINT_LINE_RAW.split('\n').forEach(l=>{ const [k,py,pt] = l.split('\t'); m[k+'|'+normPy(py)] = pt; }); return m; })();
+function exprPoint(card){
+  if(!card || card.book==null) return '';
+  const bl = Number(card.book)+'-'+Number(card.lesson);
+  return EXPR_POINT_LINE[bl+'|'+normPy(card.py)] || (card.group ? EXPR_POINT_GROUP[bl+'-'+card.group] : '') || '';
+}
 async function syncExprSeeds(){
   const applied = (await sGet('expr-seed-versions')) || {};
   let deck = await loadDeck('textbook-expr');
@@ -1907,6 +2235,75 @@ async function ensureSeed(){
   }
   await syncExprSeeds();
   await syncVocabV1();
+  await syncVocabV2();
+}
+async function syncVocabV2(){
+  if(await sGet('vocab-sync-v2')) return;
+  const deck = await loadDeck('textbook-vocab');
+  const have = new Set(deck.map(c=>normVocabPy(c.py)));
+  VOCAB_ADD_V2_RAW.trim().split('\n').forEach(line=>{
+    const [py, ko] = line.split('\t');
+    if(have.has(normVocabPy(py))) return;
+    have.add(normVocabPy(py));
+    deck.push({id:uid('vocab'), py, ko});
+  });
+  await saveDeck('textbook-vocab', deck);
+  await sSet('vocab-sync-v2', true);
+}
+
+/* 10/19 요청: 이번 주(월·화·수) 과외 테스트 범위를 일일 미션으로 한 번 등록 */
+const W1019_VOCAB_PY = ['yóulèyuán','xióngmāo','xiě xìn','mén','ménkǒur','kāi','guān','zhe','zhèng(zài)','dǎ tàijíquán','dǎ','lìhai','duì','cuò','měi','biǎoyǎn','méi wèntí','kāishǐ','zuò fàn',
+  'chuántǒng','wǔshù','zǎochen','yǐqián','wèishénme',
+  'dàifu','shūfu','bù shūfu','dùzi','téng','tóu téng','tòng','cóng','shénme shíhou','de','gèng','hǎixiān','tài…le','yuǎn','yīyuàn','fēnzhōng','zhīdào'];
+async function m2PresetW1019(){
+  if(await sGet('m2-preset-1019c')) return;
+  if(todayStr() > '2026-10-21'){ await sSet('m2-preset-1019c', true); return; }
+  const s = await getSettings();
+  const LD = '2026-10-22';
+  if(!s.nextLesson || s.nextLesson.slice(0,10)!==LD){
+    const tm = (s.nextLesson && s.nextLesson.slice(11,16)) || '10:00';
+    s.nextLesson = LD+'T'+tm;
+    await setSettings(s);
+  }
+  const cycle = m2Cycle(s);
+  const [hsk, vocab, expr] = await Promise.all([loadDeck('hsk-words'), loadDeck('textbook-vocab'), loadDeck('textbook-expr')]);
+  const hskIds = hsk.filter(c=>{ const lv=String(c.level), n=Number(c.no); return (lv==='2' && n>=110 && n<=126) || (lv==='3' && n>=1 && n<=30); }).map(c=>c.id);
+  const vset = new Set(W1019_VOCAB_PY.concat(VOCAB_ADD_V2_RAW.trim().split('\n').map(l=>l.split('\t')[0])).map(normVocabPy));
+  const vocabIds = vocab.filter(c=>vset.has(normVocabPy(c.py))).map(c=>c.id);
+  const exprIds = expr.filter(c=>Number(c.book)===3 && [5,6,7].includes(Number(c.lesson))).map(c=>c.id);   // 5~7과 본문·예문·문형연습·연습 전부
+  const at = Date.now();
+  await sSet('m2-range-hsk',   {cycle, new:hskIds,   old:[], start:{}, at});
+  await sSet('m2-range-vocab', {cycle, new:vocabIds, old:[], start:{}, at});
+  await sSet('m2-range-expr',  {cycle, new:exprIds,  old:[], start:{}, at});
+  // 이번 주만: 3일에 고르게 (새 것은 서로 다른 두 날에 한 번씩, 한자는 매일 전부)
+  const days = []; for(let d=todayStr(); d<=m2Eve(s); d=addDays(d,1)) days.push(d);
+  const order = (cards, ids)=>{ const S=new Set(ids); return cards.filter(c=>S.has(c.id)); };
+  const fixed = {cycle, decks:{
+    hsk: Object.fromEntries(days.map(d=>[d, hskIds.slice()])),
+    vocab: m2EvenSchedule('vocab', order(vocab, vocabIds), days),
+    expr: m2EvenSchedule('expr', order(expr, exprIds), days),
+  }};
+  await sSet('m2-fixed', fixed);
+  // 즐겨찾기 초기화 (한자·단어·표현 모두)
+  await setStarredKeys([]);
+  await setClearedStarred([]);
+  await sSet('m2-plan', null);
+  await sSet('m2-preset-1019c', true);
+}
+/* 카드들을 묶음(표현은 예문 묶음 단위)으로 나눠, 서로 다른 두 날에 한 번씩 고르게 배치 */
+function m2EvenSchedule(deck, cards, days){
+  const D = days.length, out = Object.fromEntries(days.map(d=>[d,[]]));
+  if(D===0) return out;
+  const pairs = D===1 ? [[0,0]] : (D===2 ? [[0,1]] : days.map((_,k)=>[k,(k+1)%D]));
+  const n = pairs.length; let rest = cards.slice();
+  for(let i=0;i<n;i++){
+    const want = Math.ceil(rest.length/(n-i));
+    const chunk = m2TakeChunk(deck, rest, want);
+    rest = rest.slice(chunk.length);
+    const [a,b] = pairs[i];
+    chunk.forEach(c=>{ out[days[a]].push(c.id); if(b!==a) out[days[b]].push(c.id); });
+  }
+  return out;
 }
 
 /* ---------------- tab switching ---------------- */
@@ -3419,9 +3816,11 @@ function renderRevealed(card){
       ${typedCompareHTML(card)}
     `;
   } else {
+    const pt = deck==='expr' ? exprPoint(card) : '';
     document.getElementById('answerSlot').innerHTML = `
       <div class="answer-panel">
         <div class="py" style="font-size:24px;">${esc(card.py)}</div>
+        ${pt ? `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:14px;text-align:left;">📌 ${esc(pt)}</div>` : ''}
       </div>
       ${typedCompareHTML(card)}
     `;
@@ -4719,7 +5118,7 @@ function m2FirstOf(e){
   const all = (e.days||[]).concat(e.wrong||[]).sort();
   return all[0] || null;
 }
-function m2BuildDeckPlan(deck, deckCards, range, prog, s, doneToday){
+function m2BuildDeckPlan(deck, deckCards, range, prog, s, doneToday, fixedAll){
   const t = todayStr();
   if(!range || range.cycle!==m2Cycle(s)) return null;           // 이번 주기 범위를 아직 안 정함
   const isNew = new Set(range.new||[]), isOld = new Set(range.old||[]);
@@ -4750,7 +5149,21 @@ function m2BuildDeckPlan(deck, deckCards, range, prog, s, doneToday){
     }
   });
   let pick;
-  if(t >= eve){
+  const FX = fixedAll && fixedAll.cycle===m2Cycle(s) && fixedAll.decks && fixedAll.decks[deck];
+  if(FX){
+    // 이번 주 고정 배치: 오늘 몫 + 지난날 몫 중 못 맞힌 것 + 틀린 것 (전날엔 이번 주 틀린 것 전부)
+    const inSet = new Set(inRange.map(c=>c.id));
+    const todayIds = new Set(FX[t]||[]);
+    const carry = inRange.filter(c=>{
+      const before = Object.keys(FX).filter(d=>d<t && (FX[d]||[]).includes(c.id)).length;
+      if(!before) return false;
+      const okBefore = (P(deck+':'+c.id).days||[]).filter(d=>d<t).length;
+      return okBefore < before;
+    });
+    const allFx = new Set([].concat(...Object.values(FX)));
+    const extra = inRange.filter(c=>!allFx.has(c.id) && (P(deck+':'+c.id).days||[]).length<2 && !(P(deck+':'+c.id).days||[]).includes(t));  // 나중에 범위에 직접 추가한 것
+    pick = [].concat(retry, inRange.filter(c=>todayIds.has(c.id) && inSet.has(c.id)), carry, extra, t>=eve ? wrongAll : []);
+  } else if(t >= eve){
     // 과외 전날: 남은 것 전부 + 이번 주에 한 번이라도 틀린 것 전부 (한자 새 분량은 전부)
     const allNew = deck==='hsk' ? inRange.filter(c=>isNew.has(c.id)) : [];
     pick = [].concat(retry, second, fresh, allNew, oldPend, wrongAll);
@@ -4801,11 +5214,12 @@ async function m2EnsurePlan(force){
   if(await sGet('m2-replan')){ force = true; await sSet('m2-replan', false); }
   if(!force && plan && plan.date===t && plan.sig===sig) return {plan, decks, s, ranges};
   const prog = await m2GetProg(cycle);
+  const fixedAll = await sGet('m2-fixed');
   const dn = await m2GetDone();
   const doneToday = new Set(dn.date===t ? dn.keys : []);
   plan = {date:t, sig, cycle, decks:{}};
   for(const d of M2_DECKS){
-    plan.decks[d] = m2LessonOk(s) ? m2BuildDeckPlan(d, decks[d], ranges[d], prog, s, doneToday) : null;
+    plan.decks[d] = m2LessonOk(s) ? m2BuildDeckPlan(d, decks[d], ranges[d], prog, s, doneToday, fixedAll) : null;
   }
   await sSet('m2-plan', plan);
   const dl = (await sGet('m2-days')) || {};
@@ -4975,8 +5389,15 @@ async function m2SaveLesson(){
   if(!d){ toast('날짜를 입력해주세요'); return; }
   if(d <= todayStr()){ toast('오늘 이후 날짜를 입력해주세요'); return; }
   const s = await getSettings();
+  const oldCycle = s.nextLesson || '';
   s.nextLesson = d+'T'+tm;
   await setSettings(s);
+  if(oldCycle && oldCycle.slice(0,10)===d && oldCycle!==s.nextLesson){
+    // 같은 날짜에서 시간만 바꾼 경우: 이번 주 범위와 기록을 그대로 이어가요
+    for(const dk of M2_DECKS){ const r = await m2GetRange(dk); if(r && r.cycle===oldCycle){ r.cycle = s.nextLesson; await sSet('m2-range-'+dk, r); } }
+    const pg = await sGet('m2-prog'); if(pg && pg.cycle===oldCycle){ pg.cycle = s.nextLesson; await sSet('m2-prog', pg); }
+    const fx = await sGet('m2-fixed'); if(fx && fx.cycle===oldCycle){ fx.cycle = s.nextLesson; await sSet('m2-fixed', fx); }
+  }
   await sSet('m2-plan', null);
   closeModal();
   toast('다음 과외를 저장했어요. 카드마다 이번 주 범위를 정해주세요');
@@ -5229,6 +5650,7 @@ async function renderHome(){
   await ensureSeed();
   await syncHsk3V1();
   await srsInitV1();
+  await m2PresetW1019();
   await renderHome();
   const s0 = await getSettings();
   if(!m2LessonOk(s0)) m2OpenLesson();   // 과외 날짜가 없거나 지났으면 바로 입력 창
