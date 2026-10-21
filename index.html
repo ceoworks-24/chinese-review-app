@@ -5275,11 +5275,28 @@ async function m2MarkMadeUp(ds, key){
   if(all){ const log = (await sGet('mission-completion-log')) || {}; log[ds] = true; await sSet('mission-completion-log', log); }
   await sSet('m2-replan', true);                                        // 오늘 미션을 다시 계산 (만회한 만큼 줄어요)
 }
-async function m2OpenMakeup(ds){
-  const dl = (await sGet('m2-days')) || {};
-  const day = dl[ds];
+/* 만회할 날의 기록 찾기 — 과외 시간만 바꾼 경우(같은 날짜)도 인정하고, 기록이 없으면 이번 주 고정 배치에서 다시 만들어요 */
+async function m2DayRecord(ds){
   const s = await getSettings();
-  if(!day || day.cycle!==m2Cycle(s)){ toast('이 날은 만회할 수 있는 기록이 없어요'); return; }
+  const cyc = m2Cycle(s), ld = cyc.slice(0,10);
+  const dl = (await sGet('m2-days')) || {};
+  let day = dl[ds];
+  if(day && day.cycle && day.cycle.slice(0,10)===ld){ if(day.cycle!==cyc){ day.cycle = cyc; await sSet('m2-days', dl); } return day; }
+  const fx = await sGet('m2-fixed');
+  if(fx && fx.cycle && fx.cycle.slice(0,10)===ld){
+    const prog = (await sGet('m2-prog')) || {cards:{}};
+    const decks = {}, done = [];
+    M2_DECKS.forEach(d=>{
+      decks[d] = ((fx.decks||{})[d]||{})[ds] || [];
+      decks[d].forEach(id=>{ const e = (prog.cards||{})[d+':'+id] || {}; if((e.days||[]).includes(ds) || e.first===ds) done.push(d+':'+id); });
+    });
+    if(M2_DECKS.some(d=>decks[d].length)){ day = {cycle:cyc, decks, done}; dl[ds] = day; await sSet('m2-days', dl); return day; }
+  }
+  return null;
+}
+async function m2OpenMakeup(ds){
+  const day = await m2DayRecord(ds);
+  if(!day){ toast('이 날은 만회할 수 있는 기록이 없어요'); return; }
   const rows = M2_DECKS.map(d=>{
     const left = (day.decks[d]||[]).filter(id=>!day.done.includes(d+':'+id)).length;
     return left>0 ? `<button class="primary" style="width:100%;margin-bottom:8px;" onclick="closeModal();setTimeout(()=>m2StartMakeup('${ds}','${d}'),50)">${M2_ICON[d]} ${M2_NAME[d]} ${left}개 만회하기</button>`
@@ -5389,6 +5406,7 @@ async function m2SaveLesson(){
     for(const dk of M2_DECKS){ const r = await m2GetRange(dk); if(r && r.cycle===oldCycle){ r.cycle = s.nextLesson; await sSet('m2-range-'+dk, r); } }
     const pg = await sGet('m2-prog'); if(pg && pg.cycle===oldCycle){ pg.cycle = s.nextLesson; await sSet('m2-prog', pg); }
     const fx = await sGet('m2-fixed'); if(fx && fx.cycle===oldCycle){ fx.cycle = s.nextLesson; await sSet('m2-fixed', fx); }
+    const dl = (await sGet('m2-days')) || {}; Object.values(dl).forEach(v=>{ if(v && v.cycle===oldCycle) v.cycle = s.nextLesson; }); await sSet('m2-days', dl);
   }
   await sSet('m2-plan', null);
   closeModal();
