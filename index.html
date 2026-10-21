@@ -5296,7 +5296,11 @@ async function m2DayRecord(ds){
 }
 async function m2OpenMakeup(ds){
   const day = await m2DayRecord(ds);
-  if(!day){ toast('이 날은 만회할 수 있는 기록이 없어요'); return; }
+  if(!day){
+    const s0 = await getSettings(), fx = await sGet('m2-fixed'), dl = (await sGet('m2-days')) || {};
+    toast('만회 기록 없음 [v1022] '+ds+' / 과외 '+(s0.nextLesson||'-')+' / 배치 '+(fx&&fx.cycle||'-')+' / 기록 '+((dl[ds]&&dl[ds].cycle)||'-'));
+    return;
+  }
   const rows = M2_DECKS.map(d=>{
     const left = (day.decks[d]||[]).filter(id=>!day.done.includes(d+':'+id)).length;
     return left>0 ? `<button class="primary" style="width:100%;margin-bottom:8px;" onclick="closeModal();setTimeout(()=>m2StartMakeup('${ds}','${d}'),50)">${M2_ICON[d]} ${M2_NAME[d]} ${left}개 만회하기</button>`
@@ -5652,7 +5656,8 @@ async function renderHome(){
     </div>`;
   };
   el.innerHTML = top + M2_DECKS.map(card).join('') + `
-    <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button>`;
+    <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button>
+    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 10.22</div>`;
 }
 
 /* ---------------- init ---------------- */
