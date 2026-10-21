@@ -2291,6 +2291,16 @@ async function m2PresetW1019(){
   await sSet('m2-preset-1019c', true);
   await sSet('m2-preset-1019d', true);
 }
+/* 10/22 0시에 과외 당일을 '지난 과외'로 잘못 봐서 다음 주(10/29)로 바꾼 경우: 과외 시작 전이면 이번 주기로 되돌려요 */
+async function m2FixLessonDay1022(){
+  if(await sGet('m2-fix-lessonday-1022')) return;
+  const fx = await sGet('m2-fixed'), s = await getSettings();
+  if(fx && fx.cycle && fx.cycle.slice(0,10)==='2026-10-22' && new Date(fx.cycle).getTime() > Date.now()
+     && s.nextLesson && s.nextLesson!==fx.cycle && s.nextLesson.slice(0,10) > '2026-10-22'){
+    s.nextLesson = fx.cycle; await setSettings(s); await sSet('m2-plan', null);
+  }
+  if(Date.now() > new Date('2026-10-22T12:00').getTime() || (fx && s.nextLesson===fx.cycle)) await sSet('m2-fix-lessonday-1022', true);
+}
 /* 카드들을 남은 날 수로 균등하게 나눠 하루에 한 묶음씩 (표현은 예문 묶음이 갈라지지 않게) */
 function m2EvenSchedule(deck, cards, days){
   const D = days.length, out = Object.fromEntries(days.map(d=>[d,[]]));
@@ -5075,7 +5085,7 @@ const M2_ICON = {hsk:'✍️', vocab:'📖', expr:'💬'};
 
 function m2Cycle(s){ return s.nextLesson || ''; }
 function m2LessonDate(s){ return s.nextLesson ? s.nextLesson.slice(0,10) : null; }
-function m2LessonOk(s){ const d = m2LessonDate(s); return !!(d && d > todayStr()); }
+function m2LessonOk(s){ if(!s.nextLesson) return false; const at = new Date(s.nextLesson); return !isNaN(at) && at.getTime() > Date.now(); }   // 과외 시작 시각 전까지는 이번 주기 (과외 당일 새벽에도 유지)
 function m2Eve(s){ return addDays(m2LessonDate(s), -1); }
 function m2FmtLesson(s){
   const d = new Date(s.nextLesson);
@@ -5400,7 +5410,7 @@ async function m2SaveLesson(){
   const d = document.getElementById('m2LessonDate').value;
   const tm = document.getElementById('m2LessonTime').value || '10:00';
   if(!d){ toast('날짜를 입력해주세요'); return; }
-  if(d <= todayStr()){ toast('오늘 이후 날짜를 입력해주세요'); return; }
+  if(d < todayStr() || new Date(d+'T'+tm).getTime() <= Date.now()){ toast('지금 이후 날짜·시간을 입력해주세요'); return; }
   const s = await getSettings();
   const oldCycle = s.nextLesson || '';
   s.nextLesson = d+'T'+tm;
@@ -5657,7 +5667,7 @@ async function renderHome(){
   };
   el.innerHTML = top + M2_DECKS.map(card).join('') + `
     <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button>
-    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 10.22</div>`;
+    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 10.22-2</div>`;
 }
 
 /* ---------------- init ---------------- */
@@ -5666,6 +5676,7 @@ async function renderHome(){
   await syncHsk3V1();
   await srsInitV1();
   await m2PresetW1019();
+  await m2FixLessonDay1022();
   await renderHome();
   const s0 = await getSettings();
   if(!m2LessonOk(s0)) m2OpenLesson();   // 과외 날짜가 없거나 지났으면 바로 입력 창
