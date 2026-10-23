@@ -1972,6 +1972,88 @@ nǚshēng\t여학생
 wèn\t묻다, 질문하다
 gàosu\t알리다
 yùnqi\t운, 운수`;
+/* 3권 8과 표현 (2026-10-23 사진) */
+const EXPR_BOOK3_LESSON8_RAW = `오늘 날씨 정말 춥네요, 어제보다 춥죠?\tJīntiān tiānqì zhēn lěng, bǐ zuótiān lěng ba?\t3\t8\t본문-1
+저도 오늘이 어제보다 춥다고 생각해요.\tWǒ yě juéde jīntiān bǐ zuótiān lěng.\t3\t8\t본문-1
+듣자 하니 서울은 작년에 눈이 많이 왔대요. 올해는요?\tTīng shuō Shǒu'ěr qùnián de xuě hěn dà. Jīnnián ne?\t3\t8\t본문-1
+올해 눈은 작년보다 더 많이 와요.\tJīnnián de xuě bǐ qùnián gèng dà.\t3\t8\t본문-1
+서울은 베이징과 같이 추워요?\tShǒu'ěr gēn Běijīng yíyàng lěng ma?\t3\t8\t본문-1
+아니요, 서울은 베이징만큼 춥지 않아요.\tBù, Shǒu'ěr méiyǒu Běijīng lěng.\t3\t8\t본문-1
+오늘은 어제보다 더워요.\tJīntiān bǐ zuótiān rè.\t3\t8\t예문-1
+우리 형(오빠)은 나보다 (키가) 커요.\tWǒ gēge bǐ wǒ gāo.\t3\t8\t예문-1
+비행기는 기차보다 더 빨라요.\tFēijī bǐ huǒchē hái kuài.\t3\t8\t예문-1
+우리 집은 그의 집보다 더 멀어요.\tWǒ jiā bǐ tā jiā gèng yuǎn.\t3\t8\t예문-1
+이것은 저것만큼 예쁘지 않아요.\tZhège méiyǒu nàge hǎokàn.\t3\t8\t예문-1
+서울은 베이징만큼 크지 않아요.\tShǒu'ěr méiyǒu Běijīng dà.\t3\t8\t예문-1
+나는 이 커피가 너무 달게 느껴져요.\tWǒ juéde zhè bēi kāfēi tài tián le.\t3\t8\t예문-2
+나는 봄이 가을보다 더 예쁘다고 생각해요.\tWǒ juéde chūntiān bǐ qiūtiān gèng piàoliang.\t3\t8\t예문-2
+요즘 일이 매우 바쁘지만, 나는 피곤하다고 느끼지 않습니다.\tZuìjìn gōngzuò fēicháng máng, dànshì wǒ bù juéde lèi.\t3\t8\t예문-2
+그녀의 옷은 내 것과 같아요.\tTā de yīfu gēn wǒ de yíyàng.\t3\t8\t예문-3
+그의 책은 내 것과 달라요.\tTā de shū gēn wǒ de bù yíyàng.\t3\t8\t예문-3
+올해 여름은 작년과 같이 더워요.\tJīnnián xiàtiān gēn qùnián yíyàng rè.\t3\t8\t예문-3
+이 책은 저 책과 같이 재미있어요.\tZhè běn shū gēn nà běn shū yíyàng yǒu yìsi.\t3\t8\t예문-3
+오늘은 어제보다 추워요.\tJīntiān bǐ zuótiān lěng.\t3\t8\t예문-4
+오늘은 어제보다 더 추워요. (还/更)\tJīntiān bǐ zuótiān hái / gèng lěng.\t3\t8\t예문-4
+오늘은 어제만큼 춥지 않아요.\tJīntiān méiyǒu zuótiān lěng.\t3\t8\t예문-4
+올해는 작년보다 더 더워요.\tJīnnián bǐ qùnián gèng rè.\t3\t8\t예문-4
+나는 오늘이 어제보다 춥다고 생각해요.\tWǒ juéde jīntiān bǐ zuótiān lěng.\t3\t8\t예문-5
+나는 오늘이 좀 덥다고 생각해요.\tWǒ juéde jīntiān yǒudiǎnr rè.\t3\t8\t예문-5
+나는 이 스웨터가 비싸다고 생각해요.\tWǒ juéde zhè jiàn máoyī hěn guì.\t3\t8\t예문-5
+나는 해산물을 너무 많이 먹었다고 생각해요.\tWǒ juéde hǎixiān chī de tài duō le.\t3\t8\t예문-5
+나는 이 사과가 맛있다고 생각해요.\tWǒ juéde zhège píngguǒ hěn hǎochī.\t3\t8\t예문-5
+서울은 베이징과 같이 추워요?\tShǒu'ěr gēn Běijīng yíyàng lěng ma?\t3\t8\t예문-6
+오늘은 어제와 같이 더워요?\tJīntiān gēn zuótiān yíyàng rè ma?\t3\t8\t예문-6
+당신의 중국어는 중국인만큼 잘해요?\tNǐ de Hànyǔ gēn Zhōngguórén yíyàng hǎo ma?\t3\t8\t예문-6
+당신이 산 것은 내 것과 같이 싸요?\tNǐ mǎi de gēn wǒ de yíyàng piányi ma?\t3\t8\t예문-6
+당신은 형(오빠)과 같이 (키가) 커요?\tNǐ gēn gēge yíyàng gāo ma?\t3\t8\t예문-6
+오늘이 추워요, 아니면 어제가 추워요?\tJīntiān lěng háishi zuótiān lěng?\t3\t8\t연습-1
+오늘이 어제보다 추워요.\tJīntiān bǐ zuótiān lěng.\t3\t8\t연습-1
+어제는 오늘만큼 춥지 않았어요.\tZuótiān méiyǒu jīntiān lěng.\t3\t8\t연습-1
+동민이가 (키가) 커요, 아니면 마이크가 커요?\tDōngmín gāo háishi Màikè gāo?\t3\t8\t연습-1
+마이크는 동민이보다 (키가) 커요.\tMàikè bǐ Dōngmín gāo.\t3\t8\t연습-1
+동민이는 마이크만큼 (키가) 크지 않아요.\tDōngmín méiyǒu Màikè gāo.\t3\t8\t연습-1
+할아버지가 뚱뚱해요, 아니면 할머니가 뚱뚱해요?\tYéye pàng háishi nǎinai pàng?\t3\t8\t연습-1
+할머니는 할아버지보다 뚱뚱해요.\tNǎinai bǐ yéye pàng.\t3\t8\t연습-1
+할아버지는 할머니만큼 뚱뚱하지 않아요.\tYéye méiyǒu nǎinai pàng.\t3\t8\t연습-1
+아빠 돈이 많아요, 아니면 엄마 돈이 많아요?\tBàba de qián duō háishi māma de qián duō?\t3\t8\t연습-1
+아빠 돈은 엄마 돈보다 많아요.\tBàba de qián bǐ māma de qián duō.\t3\t8\t연습-1
+엄마 돈은 아빠 돈만큼 많지 않아요.\tMāma de qián méiyǒu bàba de qián duō.\t3\t8\t연습-1
+오늘은 어제만큼 덥지 않습니다.\tJīntiān méiyǒu zuótiān rè.\t3\t8\t연습-2
+우리 엄마는 아빠보다 더 바쁩니다. (还/更)\tWǒ māma bǐ bàba hái / gèng máng.\t3\t8\t연습-2
+한국 영화는 중국 영화와 똑같이 재미있습니다.\tHánguó diànyǐng gēn Zhōngguó diànyǐng yíyàng yǒu yìsi.\t3\t8\t연습-2
+사과는 바나나보다 더 비쌉니다. (还/更)\tPíngguǒ bǐ xiāngjiāo hái / gèng guì.\t3\t8\t연습-2
+올해 베이징의 겨울은 일찍 와서, 자주 큰 눈이 내리고 날씨가 매우 추워요.\tJīnnián Běijīng de dōngtiān lái de hěn zǎo, chángcháng xià dàxuě, tiānqì hěn lěng.\t3\t8\t본문-2
+동민이는 베이징의 겨울이 서울보다 더 춥고 더 건조하다고 생각해요.\tDōngmín juéde Běijīng de dōngtiān bǐ Shǒu'ěr gèng lěng, gèng gānzào.\t3\t8\t본문-2
+하지만 그가 지금 입은 옷은 서울에 있을 때와 같아서, 특히 춥게 느껴져요.\tBúguò tā xiànzài chuān de yīfu gēn zài Shǒu'ěr yíyàng, suǒyǐ juéde tèbié lěng.\t3\t8\t본문-2
+샤오잉은 내일 동민이와 함께 외투를 한 벌 사러 가 줄 계획이에요.\tXiǎoyīng dǎsuan míngtiān péi Dōngmín qù mǎi yí jiàn dàyī.\t3\t8\t본문-2`;
+/* 8과 단어 (이미 있는 단어는 건너뜀) */
+const VOCAB_ADD_V3_RAW = `tiānqì\t날씨
+tiānqì yùbào\t일기 예보
+bǐ\t~보다, 비교하다
+juéde\t느끼다, 생각하다
+xuě\t(내리는) 눈
+xià xuě\t눈이 내리다, 눈이 오다
+xuěrén\t눈사람
+yíyàng\t같다
+gēn…yíyàng\t~와 같다
+dù\t도 (온도, 농도 등을 재는 단위)
+chūntiān\t봄
+xiàtiān\t여름
+qiūtiān\t가을
+dōngtiān\t겨울
+chángcháng\t늘, 항상
+dàxuě\t큰 눈, 대설
+gānzào\t건조하다
+búguò\t그러나, 그런데
+chuān\t(옷, 신발 등을) 입다, 신다
+péi\t동반하다, 함께 가다
+dàyī\t코트, 외투
+wàitào\t외투
+yǔróngfú\t패딩
+qíngtiān\t맑은 날
+yīntiān\t흐린 날
+guā fēng\t바람이 불다
+dǎ léi\t천둥치다`;
 const EXPR_SEEDS = [
   {book:3, lesson:0, ver:1, raw:()=>EXPR_BOOK3_LESSON0_RAW},
   {book:3, lesson:1, ver:2, raw:()=>EXPR_BOOK3_LESSON1_RAW},
@@ -1981,6 +2063,7 @@ const EXPR_SEEDS = [
   {book:3, lesson:5, ver:1, raw:()=>EXPR_BOOK3_LESSON5_RAW},
   {book:3, lesson:6, ver:1, raw:()=>EXPR_BOOK3_LESSON6_RAW},
   {book:3, lesson:7, ver:1, raw:()=>EXPR_BOOK3_LESSON7_RAW},
+  {book:3, lesson:8, ver:1, raw:()=>EXPR_BOOK3_LESSON8_RAW},
 ];
 function normPy(py){ return String(py||'').trim().replace(/\s+/g,' '); }
 /* ---- 표현 학습 포인트 (정답 화면에 '무엇을 연습하는 문장인지' 표시) ----
@@ -2049,6 +2132,12 @@ const EXPR_POINT_GROUP = {
   '3-7-예문-4':'去 + 장소 + 怎么走? — 길 묻기',
   '3-7-예문-5':'到 + 장소 + 往 + 방향 + 拐 — 길 안내',
   '3-7-예문-6':'A 离 B 远 / 近 — 거리 말하기',
+  '3-8-예문-1':'比 — A 比 B (还/更) + 형용사 / 부정은 A 没有 B + 형용사',
+  '3-8-예문-2':'觉得 — ~라고 느끼다·생각하다 / 부정은 不觉得',
+  '3-8-예문-3':'A 跟 B 一样 / 不一样 (+ 형용사) — 같다·다르다',
+  '3-8-예문-4':'A 比 B (还/更) + 형용사 / A 没有 B + 형용사',
+  '3-8-예문-5':'我觉得 + 문장 — 내 생각 말하기',
+  '3-8-예문-6':'A 跟 B 一样 + 형용사 + 吗? — ~와 같이 ~해요?',
 };
 const EXPR_POINT_LINE_RAW = `3-1	Dàjiā hǎo! Wǒ jiào Wáng Míng, shì nǐmen de Hànyǔ lǎoshī.	叫 / 是 — 자기소개
 3-1	Wáng lǎoshī hǎo!	호칭 + 好 — 인사
@@ -2152,7 +2241,33 @@ const EXPR_POINT_LINE_RAW = `3-1	Dàjiā hǎo! Wǒ jiào Wáng Míng, shì nǐme
 3-7	Qù Tiān'ānmén zěnme zǒu?	去 + 장소 + 怎么走? — 길 묻기
 3-7	Wǒ jiā lí dìtiězhàn bù yuǎn.	A 离 B 不远 — 거리 말하기
 3-7	Yìzhí wǎng qián zǒu, dào yīyuàn wǎng zuǒ guǎi.	往 + 방향 · 到 + 장소 — 길 안내
-3-7	Zǒu èrshí fēnzhōng jiù dào le.	就…了 — 바로 ~하다`;
+3-7	Zǒu èrshí fēnzhōng jiù dào le.	就…了 — 바로 ~하다
+3-8\tJīntiān tiānqì zhēn lěng, bǐ zuótiān lěng ba?\tA 比 B + 형용사 · 吧 (그렇죠?)
+3-8\tWǒ yě juéde jīntiān bǐ zuótiān lěng.\t觉得 + 문장 · 比
+3-8\tTīng shuō Shǒu'ěr qùnián de xuě hěn dà. Jīnnián ne?\t听说 — 듣자 하니 · …呢? (~는요?)
+3-8\tJīnnián de xuě bǐ qùnián gèng dà.\tA 比 B 更 + 형용사 — 더 ~하다
+3-8\tShǒu'ěr gēn Běijīng yíyàng lěng ma?\tA 跟 B 一样 + 형용사 + 吗?
+3-8\tBù, Shǒu'ěr méiyǒu Běijīng lěng.\tA 没有 B + 형용사 — B만큼 ~하지 않다
+3-8\tJīntiān lěng háishi zuótiān lěng?\tA 还是 B — 어느 쪽이 더 ~해요?
+3-8\tJīntiān bǐ zuótiān lěng.\tA 比 B + 형용사 — A가 B보다 ~하다
+3-8\tZuótiān méiyǒu jīntiān lěng.\tA 没有 B + 형용사 — A는 B만큼 ~하지 않다
+3-8\tDōngmín gāo háishi Màikè gāo?\tA 还是 B — 어느 쪽이 더 ~해요?
+3-8\tMàikè bǐ Dōngmín gāo.\tA 比 B + 형용사 — A가 B보다 ~하다
+3-8\tDōngmín méiyǒu Màikè gāo.\tA 没有 B + 형용사 — A는 B만큼 ~하지 않다
+3-8\tYéye pàng háishi nǎinai pàng?\tA 还是 B — 어느 쪽이 더 ~해요?
+3-8\tNǎinai bǐ yéye pàng.\tA 比 B + 형용사 — A가 B보다 ~하다
+3-8\tYéye méiyǒu nǎinai pàng.\tA 没有 B + 형용사 — A는 B만큼 ~하지 않다
+3-8\tBàba de qián duō háishi māma de qián duō?\tA 还是 B — 어느 쪽이 더 ~해요?
+3-8\tBàba de qián bǐ māma de qián duō.\tA 比 B + 형용사 — A가 B보다 ~하다
+3-8\tMāma de qián méiyǒu bàba de qián duō.\tA 没有 B + 형용사 — A는 B만큼 ~하지 않다
+3-8\tJīntiān méiyǒu zuótiān rè.\tA 没有 B + 형용사 — A는 B만큼 ~하지 않다
+3-8\tWǒ māma bǐ bàba hái / gèng máng.\tA 比 B 还/更 + 형용사 — 더 ~하다
+3-8\tHánguó diànyǐng gēn Zhōngguó diànyǐng yíyàng yǒu yìsi.\tA 跟 B 一样 + 형용사 — B와 같이 ~하다
+3-8\tPíngguǒ bǐ xiāngjiāo hái / gèng guì.\tA 比 B 还/更 + 형용사 — 더 ~하다
+3-8\tJīnnián Běijīng de dōngtiān lái de hěn zǎo, chángcháng xià dàxuě, tiānqì hěn lěng.\t정도보어 (来得很早) · 常常 — 자주
+3-8\tDōngmín juéde Běijīng de dōngtiān bǐ Shǒu'ěr gèng lěng, gèng gānzào.\t觉得 + A 比 B 更 + 형용사
+3-8\tBúguò tā xiànzài chuān de yīfu gēn zài Shǒu'ěr yíyàng, suǒyǐ juéde tèbié lěng.\t不过 · A 跟 B 一样 · 所以
+3-8\tXiǎoyīng dǎsuan míngtiān péi Dōngmín qù mǎi yí jiàn dàyī.\t打算 · 陪 + 사람 + 去 — ~와 함께 가 주다`;
 const EXPR_POINT_LINE = (()=>{ const m = {}; EXPR_POINT_LINE_RAW.split('\n').forEach(l=>{ const [k,py,pt] = l.split('\t'); m[k+'|'+normPy(py)] = pt; }); return m; })();
 function exprPoint(card){
   if(!card || card.book==null) return '';
@@ -2236,6 +2351,21 @@ async function ensureSeed(){
   await syncExprSeeds();
   await syncVocabV1();
   await syncVocabV2();
+  await syncVocabV3();
+}
+async function syncVocabV3(){
+  if(await sGet('vocab-sync-v3')) return;
+  const deck = await loadDeck('textbook-vocab');
+  const have = new Set(deck.map(c=>normVocabPy(c.py)));
+  VOCAB_ADD_V3_RAW.trim().split('\n').forEach(line=>{
+    const [py, ko] = line.split('\t');
+    if(have.has(normVocabPy(py))) return;
+    have.add(normVocabPy(py));
+    deck.push({id:uid('vocab'), py, ko});
+  });
+  deck.forEach(c=>{ if(normVocabPy(c.py)===normVocabPy('tèbié')) c.ko = '특히, 특별히, 굉장히'; });
+  await saveDeck('textbook-vocab', deck);
+  await sSet('vocab-sync-v3', true);
 }
 async function syncVocabV2(){
   if(await sGet('vocab-sync-v2')) return;
@@ -2300,6 +2430,32 @@ async function m2FixLessonDay1022(){
     s.nextLesson = fx.cycle; await setSettings(s); await sSet('m2-plan', null);
   }
   if(Date.now() > new Date('2026-10-22T12:00').getTime() || (fx && s.nextLesson===fx.cycle)) await sSet('m2-fix-lessonday-1022', true);
+}
+/* 10/23 요청: 다음 과외(10/29)까지 일일 미션 범위 한 번 등록 (반복학습 방식) */
+const W1023_BODY_PY = ['ěrduo','liǎn','yǎnjing','bízi','zuǐ','shǒu','xīgài','jiǎo','tuǐ','yāo','gēbo','jiānbǎng','bózi'];
+async function m2PresetW1023(){
+  if(await sGet('m2-preset-1023')) return;
+  if(todayStr() > '2026-10-28'){ await sSet('m2-preset-1023', true); return; }
+  const s = await getSettings();
+  const LD = '2026-10-29';
+  if(!s.nextLesson || s.nextLesson.slice(0,10)!==LD){
+    const tm = (s.nextLesson && s.nextLesson.slice(11,16)) || '10:00';
+    s.nextLesson = LD+'T'+tm;
+    await setSettings(s);
+  }
+  const cycle = m2Cycle(s);
+  const [hsk, vocab, expr] = await Promise.all([loadDeck('hsk-words'), loadDeck('textbook-vocab'), loadDeck('textbook-expr')]);
+  const hskOld = hsk.filter(c=>{ const lv=String(c.level), n=Number(c.no); return lv==='2' || (lv==='3' && n>=1 && n<=30); }).map(c=>c.id);
+  const vset = new Set(W1023_BODY_PY.concat(['tèbié'], VOCAB_ADD_V3_RAW.trim().split('\n').map(l=>l.split('\t')[0])).map(normVocabPy));
+  const vocabNew = vocab.filter(c=>vset.has(normVocabPy(c.py))).map(c=>c.id);
+  const exprOld = expr.filter(c=>Number(c.book)===3 && [6,7].includes(Number(c.lesson))).map(c=>c.id);
+  const exprNew = expr.filter(c=>Number(c.book)===3 && Number(c.lesson)===8).map(c=>c.id);
+  const at = Date.now();
+  await sSet('m2-range-hsk',   {cycle, new:[],        old:hskOld,  start:{}, at});
+  await sSet('m2-range-vocab', {cycle, new:vocabNew,  old:[],      start:{}, at});
+  await sSet('m2-range-expr',  {cycle, new:exprNew,   old:exprOld, start:{}, at});
+  await sSet('m2-plan', null);
+  await sSet('m2-preset-1023', true);
 }
 /* 카드들을 남은 날 수로 균등하게 나눠 하루에 한 묶음씩 (표현은 예문 묶음이 갈라지지 않게) */
 function m2EvenSchedule(deck, cards, days){
@@ -5112,9 +5268,13 @@ function m2TakeChunk(deck, cards, n){
   if(n<=0) return [];
   if(deck!=='expr') return cards.slice(0, n);
   const out = []; let i = 0;
+  const gk = c=>(c.book??'')+'-'+(c.lesson??'')+'-'+(c.group||'');
   while(i<cards.length && out.length<n){
-    const g = (cards[i].book??'')+'-'+(cards[i].lesson??'')+'-'+(cards[i].group||'');
-    while(i<cards.length && ((cards[i].book??'')+'-'+(cards[i].lesson??'')+'-'+(cards[i].group||''))===g){ out.push(cards[i]); i++; }
+    const g = gk(cards[i]); let j = i; while(j<cards.length && gk(cards[j])===g) j++;
+    const len = j - i;
+    // 묶음을 넣으면 목표보다 많이 넘칠 때는 (이미 담은 게 있으면) 여기서 멈춰요 — 날마다 양이 고르게
+    if(out.length>0 && out.length+len-n > n-out.length) break;
+    for(; i<j; i++) out.push(cards[i]);
   }
   return out;
 }
@@ -5667,7 +5827,7 @@ async function renderHome(){
   };
   el.innerHTML = top + M2_DECKS.map(card).join('') + `
     <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button>
-    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 10.22-2</div>`;
+    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 10.23</div>`;
 }
 
 /* ---------------- init ---------------- */
@@ -5677,6 +5837,7 @@ async function renderHome(){
   await srsInitV1();
   await m2PresetW1019();
   await m2FixLessonDay1022();
+  await m2PresetW1023();
   await renderHome();
   const s0 = await getSettings();
   if(!m2LessonOk(s0)) m2OpenLesson();   // 과외 날짜가 없거나 지났으면 바로 입력 창
