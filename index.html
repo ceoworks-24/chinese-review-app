@@ -5285,8 +5285,8 @@ function m2FirstOf(e){
   const all = (e.days||[]).concat(e.wrong||[]).sort();
   return all[0] || null;
 }
-function m2BuildDeckPlan(deck, deckCards, range, prog, s, doneToday, fixedAll){
-  const t = todayStr();
+function m2BuildDeckPlan(deck, deckCards, range, prog, s, doneToday, fixedAll, tOverride){
+  const t = tOverride || todayStr();
   if(!range || range.cycle!==m2Cycle(s)) return null;           // 이번 주기 범위를 아직 안 정함
   const isNew = new Set(range.new||[]), isOld = new Set(range.old||[]);
   const P = k=>prog.cards[k] || {};
@@ -5484,6 +5484,30 @@ async function m2OpenMakeup(ds){
     <button class="ghost" style="width:100%;" onclick="closeModal()">닫기</button>`;
   document.getElementById('modalBg').classList.add('active');
   pushOverlayState();
+}
+/* 앱을 열지 않은 지난 날: 그날 미션을 다시 계산해 기록(m2-days, m2-hist)을 만들어 둬요 */
+async function m2BackfillDays(s, ranges){
+  const t = todayStr(), cyc = m2Cycle(s);
+  const dstr = ms=>{ const d=new Date(ms); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+  const starts = M2_DECKS.map(d=>ranges[d]).filter(r=>r && r.cycle===cyc && r.at).map(r=>dstr(r.at)).sort();
+  if(!starts.length) return;
+  const dl = (await sGet('m2-days')) || {};
+  const hist = (await sGet('m2-hist')) || {};
+  const missing = []; for(let d=starts[0]; d<t; d=addDays(d,1)) if(!(dl[d] && dl[d].cycle===cyc)) missing.push(d);
+  if(!missing.length) return;
+  const [decks, prog, fixedAll] = await Promise.all([loadAllDecks(), m2GetProg(cyc), sGet('m2-fixed')]);
+  for(const d of missing){
+    const plan = {}, done = [];
+    for(const dk of M2_DECKS){
+      const ids = m2BuildDeckPlan(dk, decks[dk], ranges[dk], prog, s, new Set(), fixedAll, d) || [];
+      plan[dk] = ids;
+      ids.forEach(id=>{ const e = prog.cards[dk+':'+id] || {}; if((e.days||[]).includes(d) || e.cleared && e.first===d) done.push(dk+':'+id); });
+    }
+    const total = M2_DECKS.reduce((a,dk)=>a+plan[dk].length,0);
+    dl[d] = {cycle:cyc, decks:plan, done};
+    if(!hist[d] || !hist[d].done) hist[d] = {total, done: total>0 && done.length>=total};
+  }
+  await sSet('m2-days', dl); await sSet('m2-hist', hist);
 }
 /* 지난 날 미션 다시 하기 — 연습만 하고 완료 표시·기록은 그대로 */
 async function m2OpenPastRedo(ds){
@@ -5798,6 +5822,8 @@ async function renderHome(){
   if(streakEl) streakEl.textContent = '🔥'+streak+'일 연속 성공 중';
 
   const monday = getMondayDateStr(new Date());
+  // 앱을 아예 안 연 날도 그날 미션을 다시 계산해서 ✗·만회가 되게
+  if(lessonOk){ await m2BackfillDays(s, ranges); Object.assign(hist, (await sGet('m2-hist')) || {}); }
   // 이번 과외 주기에 속한 날만 ✗(못 한 날)로 보여줘요 — 지난 주기의 날은 '–'
   const dayLog = (await sGet('m2-days')) || {};
   const curLD = lessonOk ? m2LessonDate(s) : null;
@@ -5805,8 +5831,13 @@ async function renderHome(){
   const startDays = M2_DECKS.map(d=>ranges[d]).filter(r=>r && r.cycle===m2Cycle(s) && r.at).map(r=>dstr(r.at));
   const cycleStart = startDays.length ? startDays.sort()[0] : t;   // 이번 주기 범위를 처음 정한 날
   const inCycle = ds=>!!(curLD && ds>=cycleStart && dayLog[ds] && dayLog[ds].cycle && dayLog[ds].cycle.slice(0,10)===curLD);
-  const week = MISSION_DAYS.map((lb,i)=>{
-    const ds = addDays(monday, i), h = hist[ds];
+  // 요일 줄: 이번 과외 주기(범위 정한 날 ~ 과외 전날)를 보여줘요 (최대 7일)
+  const WK = ['일','월','화','수','목','금','토'];
+  let rowDays = [];
+  if(lessonOk){ const eve = m2Eve(s); let from = cycleStart; if(diffDays(from, eve) > 6) from = addDays(eve, -6); for(let d=from; d<=eve; d=addDays(d,1)) rowDays.push(d); }
+  if(!rowDays.length) rowDays = MISSION_DAYS.map((_,i)=>addDays(monday,i));
+  const week = rowDays.map(ds=>{
+    const lb = WK[new Date(ds+'T00:00:00').getDay()], h = hist[ds];
     let mark = '', bg = 'var(--paper-2)', col = 'var(--ink-soft)', bd = '1px solid var(--line)';
     if(ds===t){ mark = (h&&h.done)?'✓':'●'; if(h&&h.done){ bg='var(--jade)'; col='#fff'; } else { bd='2px solid var(--seal)'; col='var(--seal)'; } }
     else if(ds<t && ds<cycleStart){ mark='–'; }   // 이번 주기 시작 전 날은 비워 둬요
@@ -5868,7 +5899,7 @@ async function renderHome(){
   };
   el.innerHTML = top + M2_DECKS.map(card).join('') + `
     <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button>
-    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 10.24-2</div>`;
+    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 10.26-2</div>`;
 }
 
 /* ---------------- init ---------------- */
