@@ -5983,7 +5983,7 @@ async function renderHome(){
       <span id="tutorFoldArrow">${fo?'▾':'▸'}</span> 과외 복습 <span class="sub" style="font-weight:400;">한자 · 단어 · 표현</span></div>
     <div id="tutorFold" style="${fo?'':'display:none;'}">` + top + M2_DECKS.map(card).join('') + `
     <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button></div>
-    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.04-4</div>`;
+    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.04-6</div>`;
 }
 
 /* =====================================================================
@@ -6036,30 +6036,56 @@ function v3Others(card){ return (V3_SAME.get(card.han)||[]).filter(n=>n!==card.n
 function v3DayIdx(d){ return diffDays(V3_START, d); }
 function v3Range(a, b){ const o=[]; for(let i=a;i<=b;i++) o.push(i); return o; }
 /* 그날의 고정 분량 (틀린 것 제외) */
-/* 회독: 11/14~11/27 2회독, 11/28~12/11 3회독 (1~1000번을 14일에 고르게, 3급·1·2급 섞어서), 12/12 시험 전날 */
-const V3_ROUNDS = [{from:11, days:14, seed:2}, {from:25, days:14, seed:3}];
-const V3_EVE_IDX = 39;   // 12/12
+/* 학원 진도표 (3급) — 시험 전날엔 그 50개, 나머지 날엔 다음 50개를 미리, 새 단어가 다 끝나면 3급 섞어서 50개
+   11/27 마지막 수업 · 951~1000은 시험 없이 혼자 */
+const V3_CLASS_TESTS = [['2026-11-05',501],['2026-11-10',551],['2026-11-12',601],['2026-11-13',651],['2026-11-17',701],['2026-11-19',751],['2026-11-24',801],['2026-11-26',851],['2026-11-27',901]];
+const V3_P3_END = 24;      // 11/27까지 3급 진도
+const V3_N12_DAYS = 10;    // 11/3~11/12 1·2급 새 단어 50개씩
+const V3_ROUNDS = [{from:25, days:14, seed:3}];   // 11/28~12/11 1~1000 전체 섞어서
+const V3_EVE_IDX = 39;     // 12/12
+function v3PreTest(d){ const t = addDays(d,1); const h = V3_CLASS_TESTS.find(x=>x[0]===t); return h ? {date:t, from:h[1]} : null; }
 function v3SeededShuffle(arr, seed){
   const a = arr.slice(); let x = seed*9301+49297;
   for(let i=a.length-1;i>0;i--){ x = (x*9301+49297) % 233280; const j = Math.floor(x/233280*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
   return a;
 }
+function v3Slice(arr, seed, i, n){ const sh = v3SeededShuffle(arr, seed); return sh.slice(Math.round(arr.length*i/n), Math.round(arr.length*(i+1)/n)); }
+let _v3Sched = null;
+function v3Sched3(){
+  if(_v3Sched) return _v3Sched;
+  const days = []; let next = 501;
+  for(let k=0;k<=V3_P3_END;k++){
+    const d = addDays(V3_START, k), pt = v3PreTest(d);
+    if(pt) days.push({kind:'pre', from:pt.from, test:pt.date});
+    else if(next<=951){ days.push({kind:'new', from:next}); next += 50; }
+    else days.push({kind:'mix'});
+  }
+  const mixK = days.map((x,k)=>x.kind==='mix'?k:-1).filter(k=>k>=0);
+  const mixAll = v3SeededShuffle(v3Range(501,1000), 11);
+  mixK.forEach((k,i)=>{ const st = (50*i)%500; days[k].ids = mixAll.slice(st, st+50); });
+  return (_v3Sched = days);
+}
 function v3RoundSlice(k){
   for(const r of V3_ROUNDS){
     if(k>=r.from && k<r.from+r.days){
       const i = k-r.from, n = r.days;
-      const cut = (arr)=>{ const sh = v3SeededShuffle(arr, r.seed*7+arr[0]); return sh.slice(Math.round(arr.length*i/n), Math.round(arr.length*(i+1)/n)); };
-      return {round: V3_ROUNDS.indexOf(r)+2, day:i+1, days:n, ids: [].concat(cut(v3Range(501,1000)), cut(v3Range(1,500)))};
+      return {round:2, day:i+1, days:n, ids: [].concat(v3Slice(v3Range(501,1000), r.seed*7+501, i, n), v3Slice(v3Range(1,500), r.seed*7+1, i, n))};
     }
   }
   return null;
 }
 function v3Fixed(d){
   const k = v3DayIdx(d);
-  const parts = {rep3:[], new3:[], new12:[], rev:[]};
+  const parts = {rep3:[], new3:[], pre:[], mix3:[], new12:[], rev12:[], rev:[], s3:null};
+  if(k>=0 && k<=V3_P3_END){
+    const s3 = v3Sched3()[k]; parts.s3 = s3;
+    if(s3.kind==='new') parts.new3 = v3Range(s3.from, s3.from+49);
+    else if(s3.kind==='pre') parts.pre = v3Range(s3.from, s3.from+49);
+    else parts.mix3 = s3.ids;
+  }
+  if(k>=0 && k<V3_N12_DAYS) parts.new12 = v3Range(1+50*k, 50+50*k);
+  else if(k>=V3_N12_DAYS && k<=V3_P3_END) parts.rev12 = v3Slice(v3Range(1,500), 12, k-V3_N12_DAYS, V3_P3_END-V3_N12_DAYS+1);
   const rs = v3RoundSlice(k); if(rs) parts.rev = rs.ids;
-  if(k>=0 && k<V3_DAYS){ parts.new3 = v3Range(501+50*k, 550+50*k); parts.new12 = v3Range(1+50*k, 50+50*k); }
-  if(k-1>=0 && k-1<V3_DAYS){ parts.rep3 = v3Range(501+50*(k-1), 550+50*(k-1)); }
   return parts;
 }
 async function v3GetProg(){ return (await sGet('v3-prog')) || {cards:{}}; }
@@ -6080,7 +6106,7 @@ async function v3Plan(d, prog){
     eve = Array.from(new Set(wrongEver.concat(star))).sort((a,b)=>a-b);
   }
   const seen = new Set(), out = [];
-  [retry, f.rep3, f.new3, f.new12, f.rev, eve].forEach(arr=>arr.forEach(n=>{ if(!seen.has(n)){ seen.add(n); out.push(n); } }));
+  [retry, f.pre, f.new3, f.mix3, f.new12, f.rev12, f.rev, eve].forEach(arr=>arr.forEach(n=>{ if(!seen.has(n)){ seen.add(n); out.push(n); } }));
   return {ids:out, retry, eve, ...f};
 }
 async function v3Record(no, good, d){
@@ -6121,7 +6147,7 @@ async function v3StartSession(nos, mode, extra){
   renderReviewStep();
 }
 function v3ShuffleParts(plan){
-  return [].concat(shuffle(plan.retry.slice()), shuffle(plan.rep3.slice()), shuffle(plan.new3.slice()), shuffle(plan.new12.slice()), shuffle((plan.rev||[]).slice()), shuffle((plan.eve||[]).slice()));
+  return [].concat(shuffle(plan.retry.slice()), shuffle((plan.pre||[]).slice()), shuffle(plan.new3.slice()), shuffle((plan.mix3||[]).slice()), shuffle(plan.new12.slice()), shuffle((plan.rev12||[]).slice()), shuffle((plan.rev||[]).slice()), shuffle((plan.eve||[]).slice()));
 }
 async function v3StartMission(){
   const t = todayStr();
@@ -6244,9 +6270,11 @@ async function v3HomeHTML(){
       <div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;background:${bg};color:${col};border:${bd};">${mark}</div></div>`);
   }
   const rs = v3RoundSlice(k);
-  const dayLabel = k>=0 && k<V3_DAYS ? `1회독 Day ${k+1} / ${V3_DAYS} · 3급 ${501+50*k}~${550+50*k} · 1·2급 ${1+50*k}~${50+50*k}`
-                 : k===V3_DAYS ? '1회독 마무리 · 3급 어제 것 다시 보기'
-                 : rs ? `${rs.round}회독 Day ${rs.day} / ${rs.days} · 1~1000번 섞어서 ${rs.ids.length}개`
+  const s3 = plan.s3;
+  const md = x=>Number(x.slice(5,7))+'/'+Number(x.slice(8));
+  const dayLabel = s3 ? ('3급 '+(s3.kind==='new' ? `새 단어 ${s3.from}~${s3.from+49}` : s3.kind==='pre' ? `내일(${md(s3.test)}) 시험 ${s3.from}~${s3.from+49} 다시 보기` : '섞어서 복습')
+                        + ' · 1·2급 ' + (plan.new12.length ? `새 단어 ${plan.new12[0]}~${plan.new12[plan.new12.length-1]}` : '복습'))
+                 : rs ? `전체 복습 Day ${rs.day} / ${rs.days} · 1~1000번 섞어서 ${rs.ids.length}개`
                  : k===V3_EVE_IDX ? '시험 전날 · 그동안 틀린 것 + 즐겨찾기 전부'
                  : (k>V3_EVE_IDX ? '시험 끝! 수고했어요' : '');
   const wrongN = Object.values(prog.cards).filter(e=>(e.wrong||[]).length).length;
@@ -6258,9 +6286,8 @@ async function v3HomeHTML(){
     <div class="sub" style="text-align:right;margin-top:3px;font-size:12px;">외운 단어 ${learned} / 1000</div>
     ${plan.ids.length && left===0 ? `<div style="background:#E8F3EC;color:var(--jade);font-weight:700;text-align:center;padding:9px;border-radius:8px;margin-top:8px;">🎉 오늘 미션 완료!</div>` : `
     <div style="display:flex;margin:10px 0 2px;">
-      ${(plan.rev.length||plan.eve.length)
-        ? stat(leftOf(plan.rev.length?plan.rev:plan.eve), plan.rev.length?'회독':'틀린 것+★') + stat(leftOf(plan.retry),'어제 틀린 것','var(--ink)')
-        : stat(leftOf(plan.new3),'3급 새 단어')+stat(leftOf(plan.rep3),'3급 어제 것','var(--ink)')+stat(leftOf(plan.new12),'1·2급','var(--ink)')+stat(leftOf(plan.retry),'틀린 것','var(--ink)')}
+      ${[[plan.new3,'3급 새 단어','var(--seal)'],[plan.pre,'내일 시험','var(--gold)'],[plan.mix3,'3급 복습','var(--seal)'],[plan.new12,'1·2급','var(--ink)'],[plan.rev12,'1·2급 복습','var(--ink)'],[plan.rev,'전체 복습','var(--seal)'],[plan.eve,'틀린 것+★','var(--seal)']]
+          .filter(x=>x[0]&&x[0].length).map(x=>stat(leftOf(x[0].filter(n=>!plan.retry.includes(n))),x[1],x[2])).join('') + stat(leftOf(plan.retry),'틀린 것','var(--ink)')}
     </div>`}
     <div style="display:flex;justify-content:space-between;margin-top:10px;">${cells.join('')}</div>
     <div class="hstack" style="margin-top:12px;gap:6px;">
