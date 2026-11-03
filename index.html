@@ -3693,9 +3693,12 @@ function renderQuestion(card){
       <div class="hanzi" style="font-size:60px;text-align:center;margin:14px 0 6px;">${esc(card.han)}</div>
       ${v3Others(card).length ? `<div style="text-align:center;font-size:13px;color:var(--gold);margin-bottom:6px;">📎 읽는 법·뜻이 여러 개 — ${v3Others(card).length+1}개 모두 써 보세요</div>` : ''}
       <div class="pinyin-wrap">
-        <input type="text" id="pinyinInput" class="pinyin-input" placeholder="병음 (예: ānjìng 또는 anjing)" autocomplete="off" autocapitalize="off" autocorrect="off">
-        <input type="text" id="meaningInput" class="pinyin-input" style="margin-top:8px;" placeholder="뜻 (예: 조용하다)" autocomplete="off" onkeydown="if(event.key==='Enter'){revealCard();}">
+        <div class="sub" style="font-size:12px;font-weight:700;margin:0 0 4px 2px;">병음</div>
+        <input type="text" id="pinyinInput" class="pinyin-input" placeholder="예: ānjìng 또는 anjing" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="next" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('meaningInput').focus();}">
+        <div class="sub" style="font-size:12px;font-weight:700;margin:18px 0 4px 2px;">뜻</div>
+        <input type="text" id="meaningInput" class="pinyin-input" placeholder="예: 조용하다" autocomplete="off" enterkeyhint="done" onkeydown="if(event.key==='Enter'){revealCard();}" onpointerup="if(document.activeElement!==this){this.focus();}">
         <div id="answerSlot"></div>
+        <div style="height:14px;"></div>
         ${toneToolbar()}
       </div>`;
     document.getElementById('reviewFoot').innerHTML = `
@@ -4002,8 +4005,11 @@ function renderRevealed(card){
         ${V3_EX[card.no] ? `<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);">
           <div style="color:var(--gold);font-weight:700;font-size:13px;margin-bottom:4px;">💬 예문</div>
           <div class="hanzi" style="font-size:20px;line-height:1.5;">${esc(V3_EX[card.no][0])}</div>
-          <div style="color:var(--jade);font-size:14px;">${esc(V3_EX[card.no][1])}</div>
-          <div class="sub" style="font-size:13px;">${esc(V3_EX[card.no][2])}</div>
+          <div id="v3ExMore" style="display:none;">
+            <div style="color:var(--jade);font-size:14px;">${esc(V3_EX[card.no][1])}</div>
+            <div class="sub" style="font-size:13px;">${esc(V3_EX[card.no][2])}</div>
+          </div>
+          <button class="ghost small" id="v3ExBtn" style="margin-top:6px;padding:6px 12px;" onclick="document.getElementById('v3ExMore').style.display='';this.style.display='none';">병음·해석 보기</button>
         </div>` : ''}
       </div>`;
     if(review.skipped){
@@ -5977,7 +5983,7 @@ async function renderHome(){
       <span id="tutorFoldArrow">${fo?'▾':'▸'}</span> 과외 복습 <span class="sub" style="font-weight:400;">한자 · 단어 · 표현</span></div>
     <div id="tutorFold" style="${fo?'':'display:none;'}">` + top + M2_DECKS.map(card).join('') + `
     <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button></div>
-    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.04-3</div>`;
+    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.04-4</div>`;
 }
 
 /* =====================================================================
