@@ -5996,7 +5996,7 @@ async function renderHome(){
       <span id="tutorFoldArrow">${fo?'▾':'▸'}</span> 과외 복습 <span class="sub" style="font-weight:400;">한자 · 단어 · 표현</span></div>
     <div id="tutorFold" style="${fo?'':'display:none;'}">` + top + M2_DECKS.map(card).join('') + `
     <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button></div>
-    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.05-8</div>`;
+    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.06-3</div>`;
 }
 
 /* =====================================================================
@@ -6241,7 +6241,10 @@ async function v3StartSession(nos, mode, extra){
   renderReviewStep();
 }
 function v3ShuffleParts(plan){
-  return [].concat(shuffle(plan.retry.slice()), shuffle((plan.pre||[]).slice()), shuffle(plan.new3.slice()), shuffle((plan.mix3||[]).slice()), shuffle(plan.new12.slice()), shuffle((plan.rev12||[]).slice()), shuffle((plan.rev||[]).slice()), shuffle((plan.eve||[]).slice()));
+  // 무작위 대신 번호 순서대로
+  const all = [].concat(plan.retry, plan.pre||[], plan.new3, plan.mix3||[], plan.new12, plan.rev12||[], plan.rev||[], plan.eve||[]);
+  // 3급(501~) 먼저, 그다음 1·2급 — 각각 번호 순서
+  return Array.from(new Set(all)).sort((a,b)=>((a>=501?0:1)-(b>=501?0:1)) || a-b);
 }
 async function v3StartMission(){
   const t = todayStr();
@@ -6275,15 +6278,14 @@ async function v3Redo(d){
 async function v3WrongOnly(){
   const prog = await v3GetProg();
   const list = Object.entries(prog.cards).filter(([no,e])=>(e.wrong||[]).length)
-    .sort((a,b)=>{ const la=(a[1].wrong||[]).slice(-1)[0]||'', lb=(b[1].wrong||[]).slice(-1)[0]||''; return la<lb?1:(la>lb?-1:a[0]-b[0]); })
-    .map(([no])=>Number(no));
+    .map(([no])=>Number(no)).sort((a,b)=>a-b);
   if(!list.length){ toast('아직 틀린 단어가 없어요'); return; }
   v3StartSession(list, 'v3prac');
 }
 async function v3Starred(){
   const keys = (await getStarredKeys()).filter(k=>k.startsWith('v3:')).map(k=>Number(k.slice(3))).sort((a,b)=>a-b);
   if(!keys.length){ toast('즐겨찾기한 단어가 없어요 — 정답 화면의 ☆를 눌러 추가하세요'); return; }
-  v3StartSession(shuffle(keys), 'v3prac');
+  v3StartSession(keys, 'v3prac');
 }
 /* 요일 누르면: 그날 전체 다시하기 / 3급만 다시하기 (연습) + 지난 날 ✗면 만회 */
 async function v3OpenDay(d){
