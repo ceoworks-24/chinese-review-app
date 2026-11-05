@@ -3694,8 +3694,8 @@ function renderQuestion(card){
       <div class="hanzi" style="font-size:60px;text-align:center;margin:14px 0 6px;">${esc(card.han)}</div>
       ${v3Others(card).length ? `<div style="text-align:center;font-size:13px;color:var(--gold);margin-bottom:6px;">📎 읽는 법·뜻이 여러 개 — ${v3Others(card).length+1}개 모두 써 보세요</div>` : ''}
       <div class="pinyin-wrap">
-        <div class="sub" style="font-size:12px;font-weight:700;margin:0 0 4px 2px;">병음</div>
-        <input type="text" id="pinyinInput" class="pinyin-input" placeholder="예: ānjìng 또는 anjing" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="next" onkeydown="if(event.key==='Enter'){event.preventDefault();const c=document.getElementById('v3PosChips'); if(c) c.scrollIntoView({block:'center'}); this.blur();}">
+        <div id="v3PyArea"><div class="sub" style="font-size:12px;font-weight:700;margin:0 0 4px 2px;">병음</div>
+        <input type="text" id="pinyinInput" class="pinyin-input" placeholder="예: ānjìng 또는 anjing" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="next" onkeydown="if(event.key==='Enter'){event.preventDefault();const c=document.getElementById('v3PosChips'); if(c) c.scrollIntoView({block:'center'}); this.blur();}"></div>
         <div id="v3PosArea"><div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 6px 2px;"><span class="sub" style="font-size:12px;font-weight:700;">품사 (해당하는 것 모두 누르기)</span>
           <button type="button" onclick="v3ToggleHelp()" style="border:none;background:none;color:var(--gold);font-size:12px;font-weight:700;font-family:inherit;padding:0;">❓ 품사 설명</button></div>
         <div id="v3PosHelp" style="display:none;margin-bottom:8px;max-height:45vh;overflow:auto;"></div>
@@ -3861,7 +3861,7 @@ function revealCard(){
   review.typedMeaning = me ? me.value.trim() : '';
   if(me) me.disabled = true;
   document.querySelectorAll('#v3PosRows input').forEach(x=>x.disabled=true);
-  if(review.deck==='v3'){ const pa=document.getElementById('v3PosArea'); if(pa) pa.style.display='none'; }
+  if(review.deck==='v3'){ ['v3PosArea','v3PyArea'].forEach(id=>{ const pa=document.getElementById(id); if(pa) pa.style.display='none'; }); }
   review.stage = 'revealed';
   renderRevealed(review.queue[review.index]);
 }
@@ -4005,7 +4005,7 @@ function renderRevealed(card){
       <div class="answer-panel" style="text-align:left;">
         <div class="py" style="font-size:26px;text-align:center;">${esc(card.py)}</div>
         ${v3HunHTML(card.han)}
-        <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:15px;line-height:1.9;">${v3PosSegs(card.ko).map(x=>`<div>${v3PosTag(x.key,true)} ${esc(x.text)}</div>`).join('')}</div>
+        <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:15px;line-height:1.9;">${v3PosSegs(card.ko).map(x=>`<div><span class="sub" style="font-size:13px;font-weight:400;">[${esc(V3_POS_NAME[x.key])}]</span> ${esc(x.text)}</div>`).join('')}</div>
         ${v3Others(card).length ? `<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;line-height:1.6;">
           <div style="color:var(--gold);font-weight:700;margin-bottom:4px;">📎 같은 한자, 다른 단어</div>
           ${v3Others(card).map(n=>{ const o=v3Card(n); const lv = n<=300?'1급':(n<=500?'2급':'3급'); return `<div style="margin-bottom:4px;"><b style="color:var(--jade);">${esc(o.py)}</b> ${v3MeaningHTML(o.ko)} <span class="sub" style="font-size:11px;">(${lv} ${n}번)</span></div>`; }).join('')}
@@ -4020,9 +4020,9 @@ function renderRevealed(card){
           <button class="ghost small" id="v3ExBtn" style="margin-top:6px;padding:6px 12px;" onclick="document.getElementById('v3ExMore').style.display='';this.style.display='none';">병음·해석 보기</button>
         </div>` : ''}
         <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);">
-          <div style="color:var(--gold);font-weight:700;font-size:13px;">📖 품사 공부 — ${v3PosKeys(card).map(k=>esc(V3_POS_NAME[k])).join(' · ')}</div>
+          <div style="color:var(--gold);font-weight:700;font-size:13px;">📖 품사 공부</div>
           ${v3PosHelpHTML(v3PosKeys(card))}
-          <div class="sub" style="font-size:11px;margin-top:6px;">파랑 주어 · 빨강 술어 · 초록 목적어 · 노랑 술어 앞 꾸밈 — 빨간 테두리가 그 품사 자리</div>
+          
         </div>
       </div>`;
     if(review.skipped){
@@ -5996,7 +5996,7 @@ async function renderHome(){
       <span id="tutorFoldArrow">${fo?'▾':'▸'}</span> 과외 복습 <span class="sub" style="font-weight:400;">한자 · 단어 · 표현</span></div>
     <div id="tutorFold" style="${fo?'':'display:none;'}">` + top + M2_DECKS.map(card).join('') + `
     <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button></div>
-    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.05-2</div>`;
+    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.05-4</div>`;
 }
 
 /* =====================================================================
@@ -6020,36 +6020,21 @@ function v3PyBase(p){ return v3PyKey(String(p||'').normalize('NFD').replace(/[\u
 const V3_POS = [['명','명사'],['동','동사'],['형','형용사'],['부','부사'],['대','대명사'],['수','수사'],['양','양사'],['수량','수량사'],['전','전치사'],['접','접속사'],['조','조사'],['능','조동사'],['감','감탄사'],['접사','접사'],['구','관용구']];
 const V3_POS_NAME = Object.fromEntries(V3_POS);
 const V3_POS_INFO = {
-  '명':{zh:'名词', d:'사람·물건·장소·생각의 <b>이름</b>이에요. ("엄마, 사과, 학교") 한국어 명사와 같아요. 문장에서 <b>주어</b>나 <b>목적어</b> 자리에 와요.',
-        b:[['妈妈','주어','s',1],['买','술어','v'],['苹果','목적어','o',1]], g:'주어 + 술어 + 목적어 · 엄마가 사과를 산다'},
-  '동':{zh:'动词', d:'<b>움직임·행동</b>을 나타내요. ("먹다, 가다, 공부하다") 문장의 <b>술어</b>가 돼요. 한국어와 달리 <b>동사가 목적어 앞</b>에 와요. (밥을 먹다 → 吃饭)',
-        b:[['我','주어','s'],['学习','술어(동사)','v',1],['汉语','목적어','o']], g:'주어 + 동사 + 목적어 · 나는 중국어를 공부한다'},
-  '형':{zh:'形容词', d:'<b>성질·상태</b>를 나타내요. ("크다, 예쁘다, 춥다") 중국어 형용사는 是 없이 <b>바로 술어</b>가 되고, 보통 앞에 很을 붙여요. 명사 앞에서 꾸며 줄 수도 있어요. (好朋友 좋은 친구)',
-        b:[['她','주어','s'],['很','부사','a'],['漂亮','술어(형용사)','v',1]], g:'주어 + 很 + 형용사 · 그녀는 예쁘다'},
-  '부':{zh:'副词', d:'동사·형용사 앞에서 <b>정도·시간·빈도·부정</b> 같은 뜻을 더해요. ("아주, 이미, 또, 안") 항상 <b>술어 바로 앞</b>에 와요.',
-        b:[['他','주어','s'],['也','부사','a',1],['去','술어','v']], g:'주어 + 부사 + 술어 · 그도 간다'},
-  '대':{zh:'代词', d:'명사 <b>대신</b> 쓰는 말이에요. ("나, 너, 이것, 누구, 어디") 명사처럼 주어·목적어 자리에 와요.',
-        b:[['这','주어','s',1],['是','술어','v'],['我的书','목적어','o']], g:'이것은 내 책이다'},
-  '수':{zh:'数词', d:'<b>숫자</b>예요. ("하나, 둘, 백") 물건을 셀 때는 <b>수사 + 양사 + 명사</b> 순서로 써요.',
-        b:[['三','수사','n',1],['个','양사','n'],['人','명사','o']], g:'수사 + 양사 + 명사 · 세 사람'},
-  '양':{zh:'量词', d:'물건이나 동작을 <b>셀 때 붙는 단위</b>예요. (한국어 "개, 권, 잔, 번") 중국어는 숫자와 명사 사이에 <b>반드시</b> 넣어야 해요. (一书 ✗ → 一本书 ✓)',
-        b:[['一','수사','n'],['本','양사','n',1],['书','명사','o']], g:'수사 + 양사 + 명사 · 책 한 권'},
-  '수량':{zh:'数量词', d:'수사와 양사가 합쳐진 말이에요. ("조금, 한 번, 잠깐") 동사 뒤에서 <b>얼마나</b> 하는지를 나타내요.',
-        b:[['请','','n'],['等','술어','v'],['一下','수량사','n',1]], g:'술어 + 수량사 · 잠깐 기다려 주세요'},
-  '전':{zh:'介词', d:'한국어 조사 <b>"~에서, ~에게, ~와, ~보다"</b> 역할을 하는데, 한국어와 반대로 <b>명사 앞</b>에 와요. [전치사+명사] 덩어리는 <b>술어 앞</b>에 놓여요. (집에서 → 在家)',
-        b:[['我','주어','s'],['在家','전치사+명사','a',1],['看书','술어','v']], g:'주어 + [전치사+명사] + 술어 · 나는 집에서 책을 본다'},
-  '접':{zh:'连词', d:'단어와 단어, 문장과 문장을 <b>이어 주는 말</b>이에요. ("그리고, 그러나, 왜냐하면, 그래서") 보통 문장 앞이나 두 말 사이에 와요.',
-        b:[['因为','접속사','n',1],['下雨','','v'],['所以','접속사','n',1],['不去','','v']], g:'비가 와서 그래서 안 간다'},
-  '조':{zh:'助词', d:'혼자서는 뜻이 없고 <b>단어 뒤나 문장 끝</b>에 붙어서 의문(吗)·완료(了)·소유(的) 같은 기능을 해요. 이름은 한국어 "조사"와 같지만 역할은 달라요.',
-        b:[['你','주어','s'],['好','술어','v'],['吗','조사(의문)','n',1]], g:'문장 끝에 吗 · 잘 지내요?'},
-  '능':{zh:'能愿动词', d:'<b>동사 앞</b>에서 "~할 수 있다, ~하고 싶다, ~해야 한다"를 더해 줘요. (会, 能, 想, 要, 应该) 그래서 "조동사"라고 불러요.',
-        b:[['我','주어','s'],['会','조동사','a',1],['说','술어','v'],['汉语','목적어','o']], g:'주어 + 조동사 + 동사 + 목적어 · 나는 중국어를 할 줄 안다'},
-  '감':{zh:'叹词', d:'놀람·부름·대답을 나타내는 말이에요. ("아!, 여보세요, 응") 문장 맨 앞에 따로 와요.',
-        b:[['喂','감탄사','n',1],['你好','','v']], g:'여보세요, 안녕하세요'},
-  '접사':{zh:'词缀', d:'혼자서는 못 쓰고 다른 말의 <b>앞이나 뒤에 붙어</b> 새 단어를 만들어요. (第一의 第, 我们의 们, 桌子의 子)',
-        b:[['我','대명사','n'],['们','접사','n',1]], g:'我 + 们 = 我们 (우리)'},
-  '구':{zh:'短语', d:'여러 단어가 굳어져서 <b>한 덩어리</b>로 쓰는 표현이에요. ("안녕하세요, 전화를 걸다") 통째로 외우면 돼요.',
-        b:[['我','주어','s'],['打电话','동사+목적어','v',1]], g:'나는 전화를 건다'}
+  '명':{zh:'名词', d:'사람·물건·장소·생각의 이름이에요.', w:'주어나 목적어 자리', b:[['妈妈','주어',1],['买','술어'],['苹果','목적어',1]], g:'엄마가 사과를 산다'},
+  '동':{zh:'动词', d:'동작·행동을 나타내요.', w:'주어 뒤, 목적어 앞', b:[['我','주어'],['学习','동사',1],['汉语','목적어']], g:'나는 중국어를 공부한다'},
+  '형':{zh:'形容词', d:'성질·상태를 나타내요. 是 없이 바로 술어가 돼요.', w:'주어 뒤 (보통 앞에 很)', b:[['她','주어'],['很','부사'],['漂亮','형용사',1]], g:'그녀는 예쁘다'},
+  '부':{zh:'副词', d:'정도·시간·빈도·부정 등을 더해요.', w:'술어(동사·형용사) 바로 앞', b:[['他','주어'],['也','부사',1],['去','술어']], g:'그도 간다'},
+  '대':{zh:'代词', d:'명사 대신 쓰는 말이에요. (나, 이것, 누구)', w:'명사와 같은 자리 (주어·목적어)', b:[['这','대명사',1],['是','술어'],['我的','관형어'],['书','목적어']], g:'이것은 내 책이다'},
+  '수':{zh:'数词', d:'숫자예요.', w:'양사 앞 (수사 + 양사 + 명사)', b:[['三','수사',1],['个','양사'],['人','명사']], g:'세 사람'},
+  '양':{zh:'量词', d:'사람·물건·동작을 세는 단위예요. (개, 권, 번)', w:'숫자와 명사 사이 (꼭 넣어야 해요)', b:[['一','수사'],['本','양사',1],['书','명사']], g:'책 한 권'},
+  '수량':{zh:'数量词', d:'수사와 양사가 합쳐진 말이에요. (조금, 한 번, 잠깐)', w:'동사 뒤 또는 명사 앞', b:[['请','부탁'],['等','술어'],['一下','수량사',1]], g:'잠깐 기다려 주세요'},
+  '전':{zh:'介词', d:'명사(또는 대명사) 앞에서 대상·위치·방향·시간 등을 나타내요.', w:'명사 앞. [전치사+명사]는 술어 앞', b:[['我','주어'],['在','전치사',1],['家','명사'],['看','술어'],['书','목적어']], g:'나는 집에서 책을 본다'},
+  '접':{zh:'连词', d:'단어와 단어, 문장과 문장을 이어 줘요.', w:'두 말 사이나 문장 맨 앞', b:[['因为','접속사',1],['下雨','술어'],['所以','접속사',1],['我','주어'],['不','부사'],['去','술어']], g:'비가 와서 나는 안 간다'},
+  '조':{zh:'助词', d:'혼자 뜻은 없고 의문(吗)·완료(了)·소유(的) 등을 나타내요.', w:'단어 뒤나 문장 끝', b:[['你','주어'],['好','술어'],['吗','조사',1]], g:'잘 지내요?'},
+  '능':{zh:'能愿动词', d:'"~할 수 있다, ~하고 싶다, ~해야 한다"를 더해요.', w:'동사 바로 앞', b:[['我','주어'],['会','조동사',1],['说','술어'],['汉语','목적어']], g:'나는 중국어를 할 줄 안다'},
+  '감':{zh:'叹词', d:'놀람·부름·대답을 나타내요.', w:'문장 맨 앞, 따로', b:[['喂','감탄사',1],['你','주어'],['好','술어']], g:'여보세요, 안녕하세요'},
+  '접사':{zh:'词缀', d:'다른 말에 붙어 새 단어를 만들어요. (第一의 第, 我们의 们)', w:'단어 앞이나 뒤에 붙음', b:[['我','대명사'],['们','접사',1]], g:'我们 = 우리'},
+  '구':{zh:'短语', d:'여러 단어가 굳어진 표현이에요. 통째로 외워요.', w:'한 덩어리로 씀', b:[['我','주어'],['打电话','관용구',1]], g:'나는 전화를 건다'}
 };
 function v3PosKey(tag){ return (tag==='접두'||tag==='접미') ? '접사' : tag; }
 function v3PosSegs(ko){
@@ -6079,12 +6064,13 @@ function v3TogglePos(k){
   if(i<0){ const idx = review.posSel.indexOf(k); const el = document.getElementById('posIn_'+idx); if(el) el.focus(); }
 }
 function v3PosHelpHTML(keys){
-  return keys.map(k=>{ const I = V3_POS_INFO[k]; if(!I) return '';
-    const col = {s:'#E6EEF6', v:'#F6E3E3', o:'#E6F1EA', a:'#F6EEDC', n:'#EEEAE2'};
-    return `<div style="background:var(--paper);border-radius:10px;padding:9px 11px;margin-top:7px;font-size:13px;line-height:1.6;text-align:left;">
-      <b style="color:var(--seal);">${esc(V3_POS_NAME[k])} (${I.zh})</b> — ${I.d}
-      <div style="display:flex;flex-wrap:wrap;gap:4px;margin:7px 0 3px;">${I.b.map(([hz,lb,c,hl])=>`<span style="background:${col[c]};border-radius:7px;padding:4px 7px;text-align:center;font-size:11px;line-height:1.3;${hl?'outline:2px solid var(--seal);':''}"><span class="hanzi" style="display:block;font-size:16px;">${esc(hz)}</span>${esc(lb)||'&nbsp;'}</span>`).join('')}</div>
-      <div class="sub" style="font-size:12px;">${esc(I.g)}</div></div>`; }).join('');
+  return keys.map((k,i)=>{ const I = V3_POS_INFO[k]; if(!I) return '';
+    return `<div style="padding:10px 2px;${i?'border-top:1px solid var(--line);':''}font-size:14px;line-height:1.6;text-align:left;">
+      <div style="font-weight:700;font-size:15px;">${esc(V3_POS_NAME[k])} <span style="font-weight:400;color:var(--ink-soft);font-size:12px;">${I.zh}</span></div>
+      <div style="display:flex;gap:6px;"><span style="flex:0 0 42px;color:var(--ink-soft);font-size:13px;">설명 :</span><span>${esc(I.d)}</span></div>
+      <div style="display:flex;gap:6px;"><span style="flex:0 0 42px;color:var(--ink-soft);font-size:13px;">위치 :</span><span>${esc(I.w)}</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 0 48px;">${I.b.map(([hz,lb,hl])=>`<div style="text-align:center;"><div class="hanzi" style="font-size:18px;${hl?'color:var(--seal);font-weight:700;text-decoration:underline;text-underline-offset:4px;':''}">${esc(hz)}</div><div style="font-size:11px;${hl?'color:var(--seal);font-weight:700;':'color:var(--ink-soft);'}">${esc(lb)}</div></div>`).join('')}</div>
+      <div style="margin-left:48px;font-size:13px;color:var(--ink-soft);">${esc(I.g)}</div></div>`; }).join('');
 }
 function v3ToggleHelp(){
   const b = document.getElementById('v3PosHelp'); if(!b) return;
@@ -6110,8 +6096,7 @@ function v3TypedHTML(card){
   return `<div style="background:var(--paper-2);border-radius:10px;padding:8px 12px;margin:8px 0;font-size:14px;line-height:1.6;">
     <div class="sub" style="font-size:12px;">내가 쓴 답</div>
     <div>병음: ${tp?esc(tp):'<span class="sub">(안 씀)</span>'} ${mark}</div>
-    <div>품사: ${v3PosGradeHTML(card)}</div>
-    ${sel.map(k=>`<div>${v3PosTag(k,true)} ${vals[k]&&vals[k].trim()?esc(vals[k].trim()):'<span class="sub">(안 씀)</span>'}</div>`).join('')}</div>`;
+    ${sel.map(k=>`<div><span class="sub" style="font-size:13px;">[${esc(V3_POS_NAME[k])}]</span> ${vals[k]&&vals[k].trim()?esc(vals[k].trim()):'<span class="sub">(안 씀)</span>'} ${v3PosKeys(card).includes(k)?'<span style="color:var(--jade);font-weight:700;">✓</span>':'<span style="color:var(--seal);font-weight:700;">✗</span>'}</div>`).join('')}</div>`;
 }
 /* 한자별 훈음 줄 (예: 安 편안 안 · 静(靜) 고요할 정) */
 function v3HunHTML(han){
