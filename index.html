@@ -5983,7 +5983,7 @@ async function renderHome(){
       <span id="tutorFoldArrow">${fo?'▾':'▸'}</span> 과외 복습 <span class="sub" style="font-weight:400;">한자 · 단어 · 표현</span></div>
     <div id="tutorFold" style="${fo?'':'display:none;'}">` + top + M2_DECKS.map(card).join('') + `
     <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button></div>
-    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.04-6</div>`;
+    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.05-1</div>`;
 }
 
 /* =====================================================================
@@ -6191,24 +6191,31 @@ async function v3Starred(){
   if(!keys.length){ toast('즐겨찾기한 단어가 없어요 — 정답 화면의 ☆를 눌러 추가하세요'); return; }
   v3StartSession(shuffle(keys), 'v3prac');
 }
-/* 지난 날: ✗면 만회(그날 기록으로), ✓면 연습 */
+/* 요일 누르면: 그날 전체 다시하기 / 3급만 다시하기 (연습) + 지난 날 ✗면 만회 */
 async function v3OpenDay(d){
   const plan = await v3Plan(d);
   const done = new Set((await v3GetDoneMap())[d] || []);
-  const left = plan.ids.filter(n=>!done.has(n));
+  const t = todayStr();
+  const left = d<t ? plan.ids.filter(n=>!done.has(n)) : [];
+  const n3 = plan.ids.filter(n=>n>=501).length;
   const [y,m,dd] = d.split('-');
   const title = Number(m)+'/'+Number(dd);
-  document.getElementById('modalContent').innerHTML = left.length ? `
-    <h3>${title} 미션 만회</h3>
-    <div class="sub" style="margin-bottom:12px;">그날 못 한 ${left.length}개만 나와요. 다 하면 그날이 ✓로 바뀌어요.</div>
-    <div class="hstack"><button class="ghost" style="flex:1;" onclick="closeModal()">닫기</button>
-    <button class="primary" style="flex:1;" onclick="closeModal();setTimeout(()=>v3Makeup('${d}'),50)">만회하기</button></div>` : `
-    <h3>${title} 미션 다시 하기 ✓</h3>
-    <div class="sub" style="margin-bottom:12px;">그날 미션 ${plan.ids.length}개를 연습으로 한 번 더 풀어요. 기록은 바뀌지 않아요.</div>
-    <div class="hstack"><button class="ghost" style="flex:1;" onclick="closeModal()">닫기</button>
-    <button class="primary" style="flex:1;" onclick="closeModal();setTimeout(()=>v3Redo('${d}'),50)">다시 하기</button></div>`;
+  if(!plan.ids.length){ toast(title+'은 미션이 없어요'); return; }
+  document.getElementById('modalContent').innerHTML = `
+    <h3>${title} 미션${d===t?' (오늘)':''}</h3>
+    <div class="sub" style="margin-bottom:12px;">다시하기는 연습이라 기록은 바뀌지 않아요.</div>
+    ${left.length ? `<button class="primary" style="width:100%;margin-bottom:8px;" onclick="closeModal();setTimeout(()=>v3Makeup('${d}'),50)">못 한 ${left.length}개 만회하기</button>` : ''}
+    <button class="${left.length?'ghost':'primary'}" style="width:100%;margin-bottom:8px;" onclick="closeModal();setTimeout(()=>v3RedoDay('${d}',false),50)">그날 것 ${plan.ids.length}개 다시하기</button>
+    ${n3 ? `<button class="ghost" style="width:100%;margin-bottom:8px;" onclick="closeModal();setTimeout(()=>v3RedoDay('${d}',true),50)">3급 ${n3}개만 다시하기</button>` : ''}
+    <button class="ghost" style="width:100%;" onclick="closeModal()">닫기</button>`;
   document.getElementById('modalBg').classList.add('active');
   pushOverlayState();
+}
+async function v3RedoDay(d, only3){
+  const plan = await v3Plan(d);
+  let ids = v3ShuffleParts(plan).filter((n,i,a)=>a.indexOf(n)===i);
+  if(only3) ids = ids.filter(n=>n>=501);
+  v3StartSession(ids, 'v3prac');
 }
 async function v3Makeup(d){
   const plan = await v3Plan(d);
@@ -6258,13 +6265,13 @@ async function v3HomeHTML(){
   for(let i=0;i<7;i++){
     const d = addDays(from,i), dl = new Date(d+'T00:00:00');
     let mark='', bg='var(--paper-2)', col='var(--ink-soft)', bd='1px solid var(--line)', click='';
-    if(d===t){ const ok = plan.ids.length>0 && left===0; mark = ok?'✓':'●'; if(ok){ bg='var(--jade)'; col='#fff'; } else { bd='2px solid var(--seal)'; col='var(--seal)'; } }
+    if(d===t){ const ok = plan.ids.length>0 && left===0; mark = ok?'✓':'●'; if(ok){ bg='var(--jade)'; col='#fff'; } else { bd='2px solid var(--seal)'; col='var(--seal)'; } click=`v3OpenDay('${d}')`; }
     else if(d<t){
       const pl = await v3Plan(d, prog); const dd = new Set(dm[d]||[]);
       if(!pl.ids.length){ mark='–'; }
       else if(pl.ids.every(n=>dd.has(n))){ mark='✓'; bg='var(--jade)'; col='#fff'; click=`v3OpenDay('${d}')`; }
       else { mark='✗'; bg='#FCE9E9'; col='var(--seal)'; click=`v3OpenDay('${d}')`; }
-    } else { bd='1px dashed var(--line)'; }
+    } else { bd='1px dashed var(--line)'; click=`v3OpenDay('${d}')`; }
     cells.push(`<div style="display:flex;flex-direction:column;align-items:center;gap:3px;${click?'cursor:pointer;':''}" ${click?`onclick="${click}"`:''}>
       <span style="font-size:10.5px;color:${d===t?'var(--seal)':'var(--ink-soft)'};font-weight:${d===t?700:400};">${W[dl.getDay()]}<br>${dl.getMonth()+1}/${dl.getDate()}</span>
       <div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;background:${bg};color:${col};border:${bd};">${mark}</div></div>`);
