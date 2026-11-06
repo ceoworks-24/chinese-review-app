@@ -5996,7 +5996,7 @@ async function renderHome(){
       <span id="tutorFoldArrow">${fo?'▾':'▸'}</span> 과외 복습 <span class="sub" style="font-weight:400;">한자 · 단어 · 표현</span></div>
     <div id="tutorFold" style="${fo?'':'display:none;'}">` + top + M2_DECKS.map(card).join('') + `
     <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button></div>
-    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.06-4</div>`;
+    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.06-5</div>`;
 }
 
 /* =====================================================================
@@ -6303,6 +6303,7 @@ async function v3OpenDay(d){
     ${left.length ? `<button class="primary" style="width:100%;margin-bottom:8px;" onclick="closeModal();setTimeout(()=>v3Makeup('${d}'),50)">못 한 ${left.length}개 만회하기</button>` : ''}
     <button class="${left.length?'ghost':'primary'}" style="width:100%;margin-bottom:8px;" onclick="closeModal();setTimeout(()=>v3RedoDay('${d}',false),50)">그날 것 ${plan.ids.length}개 다시하기</button>
     ${n3 ? `<button class="ghost" style="width:100%;margin-bottom:8px;" onclick="closeModal();setTimeout(()=>v3RedoDay('${d}',true),50)">3급 ${n3}개만 다시하기</button>` : ''}
+    ${plan.s3 && plan.s3.from ? `<button class="ghost" style="width:100%;margin-bottom:8px;" onclick="closeModal();setTimeout(()=>v3StartSession(v3Range(${plan.s3.from},${plan.s3.from+49}),'v3prac'),50)">3급 ${plan.s3.from}~${plan.s3.from+49} 50개만</button>` : ''}
     <button class="ghost" style="width:100%;" onclick="closeModal()">닫기</button>`;
   document.getElementById('modalBg').classList.add('active');
   pushOverlayState();
