@@ -3695,7 +3695,7 @@ function renderQuestion(card){
       ${v3Others(card).length ? `<div style="text-align:center;font-size:13px;color:var(--gold);margin-bottom:6px;">📎 읽는 법·뜻이 여러 개 — ${v3Others(card).length+1}개 모두 써 보세요</div>` : ''}
       <div class="pinyin-wrap">
         <div id="v3PyArea"><div class="sub" style="font-size:12px;font-weight:700;margin:0 0 4px 2px;">병음</div>
-        <input type="text" id="pinyinInput" class="pinyin-input" placeholder="예: ānjìng 또는 anjing" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="next" onkeydown="if(event.key==='Enter'){event.preventDefault();const c=document.getElementById('v3PosChips'); if(c) c.scrollIntoView({block:'center'}); this.blur();}"></div>
+        <input type="text" id="pinyinInput" class="pinyin-input" placeholder="예: ānjìng 또는 anjing" inputmode="email" lang="en" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="next" onkeydown="if(event.key==='Enter'){event.preventDefault();const c=document.getElementById('v3PosChips'); if(c) c.scrollIntoView({block:'center'}); this.blur();}"></div>
         <div id="v3PosArea"><div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 6px 2px;"><span class="sub" style="font-size:12px;font-weight:700;">품사 (해당하는 것 모두 누르기)</span>
           <button type="button" onclick="v3ToggleHelp()" style="border:none;background:none;color:var(--gold);font-size:12px;font-weight:700;font-family:inherit;padding:0;">❓ 품사 설명</button></div>
         <div id="v3PosHelp" style="display:none;margin-bottom:8px;max-height:45vh;overflow:auto;"></div>
@@ -5996,7 +5996,7 @@ async function renderHome(){
       <span id="tutorFoldArrow">${fo?'▾':'▸'}</span> 과외 복습 <span class="sub" style="font-weight:400;">한자 · 단어 · 표현</span></div>
     <div id="tutorFold" style="${fo?'':'display:none;'}">` + top + M2_DECKS.map(card).join('') + `
     <button class="ghost" style="width:100%;margin-top:4px;" onclick="m2OpenLesson()">📅 과외 날짜 설정</button></div>
-    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.06-3</div>`;
+    <div class="sub" style="text-align:center;margin-top:10px;font-size:11px;">버전 11.06-4</div>`;
 }
 
 /* =====================================================================
@@ -6051,7 +6051,7 @@ function v3PosChipsHTML(){
 function v3PosRowsHTML(){
   const sel = review.posSel || [], vals = review.posVals || {};
   return sel.map((k,i)=>`<div style="display:flex;gap:8px;align-items:center;margin-top:6px;">${v3PosTag(k)}
-    <input type="text" class="pinyin-input" id="posIn_${i}" data-k="${k}" style="flex:1;margin:0;" placeholder="${esc(V3_POS_NAME[k])} 뜻" autocomplete="off" enterkeyhint="${i<sel.length-1?'next':'done'}" value="${esc(vals[k]||'')}"
+    <input type="text" class="pinyin-input" id="posIn_${i}" lang="ko" inputmode="text" data-k="${k}" style="flex:1;margin:0;" placeholder="${esc(V3_POS_NAME[k])} 뜻" autocomplete="off" enterkeyhint="${i<sel.length-1?'next':'done'}" value="${esc(vals[k]||'')}"
       oninput="review.posVals['${k}']=this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();const nx=document.getElementById('posIn_${i+1}'); if(nx) nx.focus(); else revealCard();}"></div>`).join('');
 }
 function v3TogglePos(k){
